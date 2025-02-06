@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ReleaseVersion>0.3.2</ReleaseVersion>
+    <LangVersion>13</LangVersion>
+  </PropertyGroup>
+
+  <Target Name="PreCompile" BeforeTargets="BeforeCompile">
+    <ItemGroup>
+      <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+        <_Parameter1>ReleaseVersion</_Parameter1>
+        <_Parameter2>$(ReleaseVersion)</_Parameter2>
+      </AssemblyAttribute>
+    </ItemGroup>
+    <WriteCodeFragment AssemblyAttributes="@(AssemblyAttribute)" OutputDirectory="$(IntermediateOutputPath)" Language="C#" />
+  </Target>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(RunConfiguration)' == 'standalone' " />
+  <PropertyGroup Condition=" '$(RunConfiguration)' == 'license' " />
+  <ItemGroup>
+    <PackageReference Include="DotNetEnv" Version="3.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Controllers\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MystSafe.Backend.DB\MystSafe.Backend.DB.csproj" />
+    <ProjectReference Include="..\MystSafe.Shared.Common\MystSafe.Shared.Common.csproj" />
+    <ProjectReference Include="..\MystSafe.Shared.CryptoLicense\MystSafe.Shared.CryptoLicense.csproj" />
+    <ProjectReference Include="..\MystSafe.Shared.Crypto\MystSafe.Shared.Crypto.csproj" />
+  </ItemGroup>
+</Project>

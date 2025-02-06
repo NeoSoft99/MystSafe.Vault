@@ -1,0 +1,49 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "MystSafe.Shared.Common";
+
+package ContactBlock;
+
+service ContactBlockNodeService {
+  rpc Broadcast(ContactBlock) returns (BroadcastContactResult);
+  rpc Scan(ScanContactParams) returns (ScanContactResult);
+}
+
+message BroadcastContactResult {
+  int32 status = 1;
+  string message = 2;
+}
+
+message ScanContactParams {
+    int64 last_scanned_date_time = 1;
+    int32 page_size = 2;
+}
+
+message ScanContactResult {
+  int32 status = 1;
+  string message = 2;
+  repeated ContactBlock blocks = 3;
+  bool has_more = 4; 
+}
+
+message ContactBlock {
+  string hash = 1;
+  int64 time_stamp = 2;
+  int32 height = 3;
+  string pub_key = 4;
+  string recipient_stealth_address = 5;
+  string sender_stealth_address = 6;
+  string init_data = 7;
+  string message_data = 8;
+  int32 version = 9;
+  int32 network = 10;
+  string prev_hash = 11;
+  int32 difficulty = 12;
+  int32 nonce = 13;
+  bool delete_flag = 14;
+  string signature = 15;
+  string license = 16;
+  int32 license_type = 17;
+  string reserved = 18;
+}
+

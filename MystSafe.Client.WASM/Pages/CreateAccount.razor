@@ -1,0 +1,358 @@
+﻿@page "/createaccount"
+@using MystSafe.Client.Engine
+@using MystSafe.Shared.Common
+@using MystSafe.Client.Base.Components
+@using MystSafe.Client.Base
+@using MystSafe.Shared.Crypto
+
+@inject SendProcessor sendProcessor
+@inject NavigationManager navigationManager
+
+@inject AccountService accountService
+@implements IDisposable
+@inject EULAStatus eula_status
+
+@inject IJSRuntime JSRuntime
+@inject UIModeNotification uiModeNotification
+@inject ISnackbar Snackbar
+@inject ClientVersionService versionService
+@inject IDialogService DialogService
+
+@*<MudPaper Elevation="0" Style="@paperStyle">*@
+<MudPaper Elevation="0">
+    <MudCard Elevation="0" Class="ma-2">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudRadioGroup @bind-SelectedOption="Account_Option" T="int" >
+                    <MudRadio T="int" Option="1" Color="Color.Success" UnCheckedColor="Color.Default" Size="Size.Large">Create New Account</MudRadio>
+                    <MudRadio T="int" Option="2" Color="Color.Success" UnCheckedColor="Color.Default" Size="Size.Large">Restore From Secret Phrase</MudRadio>
+                </MudRadioGroup>
+
+                @*<MudText Typo="Typo.h5">Create New Account</MudText>*@
+            </CardHeaderContent>
+            <CardHeaderActions>
+            </CardHeaderActions>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudPaper Elevation="0" Style="display: flex; flex-direction: column;">
+
+                <MudToolBar Class="ma-4">
+                    <MudTextField MaxLength="ClientConstants.MAX_ACCOUNT_NICKNAME_LENGTH_BYTES" @bind-Value="Nickname" T="string" Label="Nickname" Variant="Variant.Outlined" HelperText="Shared with your contacts, but never publicly" Clearable="true" Immediate="true" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Refresh" OnAdornmentClick="GenerateRandomUsername" AdornmentAriaLabel="Generate random username" />
+                </MudToolBar>
+                @*   <MudToolBar Class="ma-3">
+
+                        <div><small>
+                    @if (Account_Option == 2)
+                    {
+                        <p>
+                    The account nickname can be different from the one used for the original account,
+                    but if you want to avoid confusion you better use the same nickname on all devies.
+                        </p>
+                    }
+                    <p>
+                        Note that the account nickname you enter here will be shared with your contacts, but it will never be visible publicly.
+                        You can use either your real name or an abstract nickname, depending on level of privacy you are seeking.
+                    </p>
+                    </small></div>
+
+                        </MudToolBar>
+
+                            <MudToolBar Class="ma-4">
+                                <MudSelect @bind-Value="@NetworkSelected" T="string" Label="Select Network" Variant="Variant.Outlined" HelperText="">
+                                    <MudSelectItem Value="@(Networks.ToString(Networks.mainnet))" />
+                                    <MudSelectItem Value="@(Networks.ToString(Networks.testnet))" />
+                                    <MudSelectItem Value="@(Networks.ToString(Networks.devnet))" />
+                                    <MudSelectItem Value="@(Networks.ToString(Networks.custom))" />
+                                </MudSelect>
+                            </MudToolBar>
+                *@
+
+                @*<MudToolBar Class="ma-4">
+                        <MudTextField @bind-Value="NetworkSelected" T="string" Label="Network" Variant="Variant.Outlined" ReadOnly="true" />
+                    </MudToolBar>*@
+
+                @if (Account_Option == 2)
+                {
+                    <MudToolBar Class="ma-4">
+                        <MudTextField @bind-Value="Mnemonic" T="string" Label="Secret Phrase" Variant="Variant.Outlined" HelperText="12 words" />
+                    </MudToolBar>
+                }
+            </MudPaper>
+        </MudCardContent>
+        <MudCardActions>
+            @*<MudButton Class="ma-4" Disabled="@isWorking" @onclick="(() => CreateOrRestore())" Variant="Variant.Filled" Color="Color.Primary">
+                        @if (isWorking && Account_Option == 1)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Success" />
+                            <MudText>Creating...</MudText>
+                        }
+                        else
+                if (isWorking && Account_Option == 2)
+                        {
+                            <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                            <MudText Class="ms-2">Restoring...</MudText>
+                        }
+                        else
+                   if (Account_Option == 1)
+                        {
+                            <MudText>Create Account</MudText>
+                        }
+                        else
+                   if (Account_Option == 2)
+                        {
+                            <MudText>Restore Account</MudText>
+                        }
+                    </MudButton>*@
+            @if (Account_Option == 1)
+            {
+                <SmartMudButton NormalText="Create Account" WorkingText="Creating..." OnButtonClick="CreateOrRestore" IsWorking="isWorking"></SmartMudButton>
+            }
+            else
+            {
+                <SmartMudButton NormalText="Restore Account" WorkingText="Restoring..." OnButtonClick="CreateOrRestore" IsWorking="isWorking"></SmartMudButton>
+            }
+        </MudCardActions>
+    </MudCard>
+
+    <MudToolBar Position="Fixed" Bottom="0">
+        <MudText Typo="Typo.caption">Release Version: @versionService.GetReleaseVersion()</MudText>
+    </MudToolBar>
+
+    <MudDialog @bind-Visible="dialog_visible" Options="dialogOptions">
+        <TitleContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.Info" Class="mr-3" />Account has been created successfully
+            </MudText>
+        </TitleContent>
+        <DialogContent>
+
+            <p>
+                If you want to be able to recover this account in the future,
+                make sure you back up the 12-word secret phrase before you delete the account.
+            </p>
+
+        </DialogContent>
+        <DialogActions>
+            <MudButton OnClick="GoToAccountInfo" Variant="Variant.Filled" Color="Color.Primary">Backup Now</MudButton>
+            <MudButton OnClick="GoToNewSecret" Variant="Variant.Filled" Color="Color.Inherit">Backup Later</MudButton>
+        </DialogActions>
+    </MudDialog>
+
+    <MudDialog @bind-Visible="show_EULA" Options="dialogOptions">
+        <TitleContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.Warning" Class="mr-3" /><b>MystSafe End User License Agreement</b>
+            </MudText>
+        </TitleContent>
+        <DialogContent>
+            <p />
+            PLEASE READ THIS END USER LICENSE AGREEMENT ("AGREEMENT") CAREFULLY BEFORE USING MYSTSAFE ("SOFTWARE").
+            BY USING THE SOFTWARE, YOU ARE AGREEING TO BE BOUND BY THE TERMS OF THIS AGREEMENT.
+            IF YOU DO NOT AGREE TO THE TERMS OF THIS AGREEMENT, DO NOT USE THE SOFTWARE.
+            <p />
+            <b>License:</b>
+            <br>Free Edition: Both individual and organizational end users are granted a non-exclusive, non-transferable, limited right to use the Free Edition of the Software for evaluation purposes with limitations as specified by MystSafe.
+            <br>Premium Edition: Upon payment of the applicable fee, end users are granted a non-exclusive, non-transferable right to use the Premium Edition of the Software for its intended purpose without limitations of Free Edition.
+            <p />
+            <b>Restrictions:</b> The following activities are strictly prohibited:<br />
+            a. Modifying the Software.<br />
+            b. Distributing the Software or any modifications to the Software.<br />
+            c. Using the Software for commercial purposes without explicit permission from MystSafe, unless a Premium Edition license has been purchased.<br />
+            <p />
+            <b>Premium Services:</b> MystSafe reserves the exclusive right to offer additional services, features, and support related to the Software, which are only available to Premium Edition users or upon payment of a separate fee.
+            <p />
+            <b>Source Code:</b> The source code of the Software is subject to its own license, which may have different terms than this Agreement.
+            <p />
+            <b>Disclaimer of Warranty:</b> The Software is provided "as is", without warranty of any kind, express or implied, including but not limited
+            to the warranties of merchantability, fitness for a particular purpose and noninfringement.
+            <p />
+            <b>Limitation of Liability:</b> In no event shall the authors or copyright holders be liable for any claim, damages or other liability,
+            whether in an action of contract, tort or otherwise, arising from, out of or in connection with the Software or the use or other dealings in the Software.
+            <p />
+            BY CLICKING THE "I AGREE" BUTTON, YOU ACKNOWLEDGE THAT YOU HAVE READ AND UNDERSTAND THIS AGREEMENT AND AGREE TO BE BOUND BY ITS TERMS.
+            IF YOU DO NOT AGREE TO THE TERMS OF THIS AGREEMENT, PLEASE CLICK "EXIT APP".
+            <p />
+        </DialogContent>
+        <DialogActions>
+            <MudButton OnClick="UnderstandDisclaimer" Variant="Variant.Filled" Color="Color.Primary">I Agree</MudButton>
+            <MudButton OnClick="ExitApp" Variant="Variant.Filled" Color="Color.Inherit">Exit App</MudButton>
+        </DialogActions>
+    </MudDialog>
+</MudPaper>
+
+
+@code {
+    //private string paperStyle = "height: 93vh; display: flex; flex-direction: column; justify-content: space-between;";
+
+    private bool isWorking = false;
+    private bool dialog_visible = false;
+    private void ShowInfoDialog() => dialog_visible = true;
+    private void Cancel() => dialog_visible = false;
+    private DialogOptions dialogOptions = new() { FullWidth = true };
+    private void GoToAccountInfo() => navigationManager.NavigateTo("/manageaccount");
+    private void GoToNewSecret() => navigationManager.NavigateTo("/newsecret");
+    string NetworkSelected = Networks.ToString(Networks.devnet);
+    string Mnemonic = "";
+
+    private string accountAddress = "";
+    private string Nickname = "";
+
+    bool show_EULA = false;
+
+    public int Account_Option { get; set; } = 1; // 1 - create; 2 - restore
+
+    private void GenerateRandomUsername()
+    {
+        Nickname = RandomUsernameGenerator.GenerateRandomUsername();
+    }
+
+    protected void UnderstandDisclaimer()
+    {
+        try
+        {
+            // do nothing
+        }
+        finally
+        {
+            show_EULA = false;
+            eula_status.HasBeenShown = true;
+        }
+    }
+
+    protected void ExitApp()
+    {
+        try
+        {
+            navigationManager.NavigateTo("https://mystsafe.com");
+        }
+        finally
+        {
+            show_EULA = false;
+            eula_status.HasBeenShown = false;
+        }
+    }
+
+    void ShowAlert(string message, Severity severity)
+    {
+
+        Snackbar.Add(message, severity);
+    }
+
+
+    private async Task CreateOrRestore()
+    {
+        if (Account_Option == 1)
+            await CreateNewAccount();
+        else
+            await Restore();
+    }
+
+    private async Task CreateNewAccount()
+    {
+        isWorking = true;
+        await InvokeAsync(StateHasChanged);
+        try
+        {
+            var account_name = Nickname.Trim();
+            var account = await sendProcessor.CreateNewAccount(account_name, Networks.FromString(NetworkSelected));
+            accountService.CurrentAccount = account;
+            accountService.CurrentAccount.EULAHasBeenShown = eula_status.HasBeenShown;
+
+            ShowInfoDialog();
+
+        }
+        catch (ApplicationException e)
+        {
+            ShowAlert(e.Message, Severity.Warning);
+        }
+        catch (Exception e)
+        {
+            ShowAlert("Could not create account: " + e.Message, Severity.Error);
+        }
+        finally
+        {
+            isWorking = false;
+            await InvokeAsync(StateHasChanged);
+        }
+
+    }
+
+    private async Task Restore()
+    {
+        isWorking = true;
+        StateHasChanged();
+        try
+        {
+            var account_name = Nickname.Trim();
+            var mnemonic_trimmed = Mnemonic.Trim();
+            var account = await sendProcessor.RestoreAccount(mnemonic_trimmed, account_name, Networks.FromString(NetworkSelected));
+            if (account == null)
+                throw new Exception("Unknown error");
+            ShowAlert("Account has been restored successfully", Severity.Success);
+
+            accountService.CurrentAccount = account;
+
+            navigationManager.NavigateTo("/manageaccount");
+        }
+        catch (ApplicationException e)
+        {
+            ShowAlert(e.Message, Severity.Warning);
+        }
+        catch (Exception e)
+        {
+            ShowAlert("Could not restore account: " + e.Message, Severity.Error);
+        }
+        finally
+        {
+            isWorking = false;
+            StateHasChanged();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!await accountService.PageSelector(PageTypes.CREATE_ACCOUNT))
+            return;
+
+        await uiModeNotification.NotifyChanged(UIModes.Account);
+
+        Snackbar.Configuration.SnackbarVariant = Variant.Outlined;
+        Snackbar.Configuration.MaxDisplayedSnackbars = 5;
+
+        if (accountService.CurrentAccount != null)
+            eula_status.HasBeenShown = accountService.CurrentAccount.EULAHasBeenShown;
+
+        string runtime_environment = ""; //"production";
+
+        try
+        {
+            runtime_environment = await JSRuntime.InvokeAsync<string>("eval", "window.MyApp.environment.runtime_environment");
+        }
+        catch { }
+
+        show_EULA = runtime_environment == "production" && !eula_status.HasBeenShown;
+        //show_EULA = true;
+
+        GenerateRandomUsername();
+
+        if (navigationManager.BaseUri.Contains("app.mystsafe.com"))
+        {
+            NetworkSelected = Networks.ToString(Networks.mainnet);
+        }
+        else
+        if (navigationManager.BaseUri.Contains("test.mystsafe.com"))
+        {
+            NetworkSelected = Networks.ToString(Networks.testnet);
+        }
+        else
+        {
+            NetworkSelected = Networks.ToString(Networks.devnet);
+        }
+        //SAlert(await runtimeFingerprint.GetRuntimeFingerprintAsync(), Severity.Success);
+    }
+
+    void IDisposable.Dispose()
+    {
+        //CloseAlert();
+    }
+}

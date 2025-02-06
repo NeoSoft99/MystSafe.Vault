@@ -1,0 +1,515 @@
+﻿@page "/manageaccount"
+@using MystSafe.Client.Engine
+@using MystSafe.Shared.Common
+@using MystSafe.Client.Base.Components
+@using MystSafe.Client.Base
+@using MystSafe.Shared.Crypto
+
+@inject SendProcessor sendProcessor
+@inject NavigationManager navigationManager
+@inject AccountService accountService
+@inject UIModeNotification uiModeNotification
+@inject ISnackbar Snackbar
+@inject AccessControlService accessControlService
+@inject InactivityTimerService inactivityTimerService
+@inject ClientVersionService versionService
+@inject SecretExportService secretExportService
+@inject IDialogService DialogService
+
+<style>
+    .slider-flex-grow {
+        flex-grow: 1;
+    }
+</style>
+
+<MudPaper Elevation="0" Style="@paperStyle">
+    <MudCard Elevation="0" Class="ma-1">
+        <MudCardHeader>
+            <CardHeaderContent>
+                @*<MudText Typo="Typo.h6">Your Account</MudText>*@
+            </CardHeaderContent>
+            <CardHeaderActions>
+            </CardHeaderActions>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudPaper Elevation="0" Style="display: flex; flex-direction: column;">
+
+                <SecretTextField @bind-TextValue="Address" TextLabel="Address" ReadOnly="true" ClipboardCopyEnabled="true"> </SecretTextField>
+
+                <MudToolBar Class="ma-3">
+                    <MudTextField MaxLength="ClientConstants.MAX_ACCOUNT_NICKNAME_LENGTH_BYTES" @ref="NicknameReference" @bind-Value="Nickname" T="string" Label="Nickname" ReadOnly=@nickname_readonly Variant="@_nickname_variant" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Edit" OnAdornmentClick="@(() => EnableNicknameEdit())" />
+                </MudToolBar>
+
+                <SecretTextField @bind-TextValue="Mnemonic" TextLabel="Secret Phrase" ReadOnly="true" ClipboardCopyEnabled="true" InputMaskingEnabled="true" PrintEnabled="true"> </SecretTextField>
+
+                @*<SecretTextField @bind-TextValue="Network" TextLabel="Network" ReadOnly="true"> </SecretTextField>*@
+
+                <SecretTextField @bind-TextValue="Licenses" TextLabel="License" ReadOnly="true"> </SecretTextField>
+
+                <SecretTextField @bind-TextValue="Rewards" TextLabel="Rewards" ReadOnly="true"> </SecretTextField>
+
+                <MudToolBar Class="ma-3">
+                    <MudSwitch T="int" @bind-Checked="@Authn_checked" Color="Color.Success">Biometric/Passkey</MudSwitch>
+                    <MudSlider Class="ma-3 slider-flex-grow" Min="0" Max="7" Step="1" @bind-Value="@LockTimeoutSliderValue">
+                        Lock timeout: @GetDisplayLockTimeout()
+                    </MudSlider>
+                </MudToolBar>
+
+                <MudToolBar Class="ma-3">
+                    @if (edit_buttons_visible)
+                    {
+                        <MudButton Class="ma-3" OnClick="@(() => CancelEdits())" Variant="Variant.Filled" Color="Color.Inherit">Cancel</MudButton>
+                        <MudButton Class="ma-3" OnClick="@(() => SaveEdits())" Variant="Variant.Filled" Color="Color.Primary">Save</MudButton>
+                    }
+                </MudToolBar>
+                <MudToolBar Class="ma-3">
+                    @if (!edit_buttons_visible)
+                    {
+                        <SmartMudButton NormalText="Get Premium" WorkingText="Wait..." OnButtonClick="BuyLicense" IsWorking="is_buy_license_working"></SmartMudButton>
+
+                        <SmartMudButton NormalText="Check License" WorkingText="Checking..." OnButtonClick="SyncLicenseWallet" IsWorking="is_scan_license_working"></SmartMudButton>
+                    }
+                </MudToolBar>
+            
+                <MudToolBar Class="ma-3">
+                    @if (!edit_buttons_visible)
+                    {
+                        <MudFileUpload T="IBrowserFile" FilesChanged="ViewSecretExportFile">
+                            <ActivatorContent>
+                                @*<MudButton Style="margin-top: -6px;" HtmlTag="label" Icon="@Icons.Material.Filled.FileOpen" Size="Size.Medium" Color="Color.Primary" for="@context.Id">*@
+                                <MudButton Style="margin-top: -6px;" HtmlTag="label" Icon="@Icons.Material.Filled.FileOpen" Size="Size.Medium" Color="Color.Primary">
+                                    Decrypt Export
+                                </MudButton>
+                            </ActivatorContent>
+                        </MudFileUpload>
+                    }
+                </MudToolBar>
+
+                <MudToolBar Class="ma-3">
+                    @if (!edit_buttons_visible)
+                    {
+                        <MudButton Class="ma-3" OnClick="@(() => ShowDeleteDialog())" Variant="Variant.Filled" Color="Color.Warning">Delete</MudButton>
+                        <MudButton Class="ma-3" OnClick="@(() => ShowEraseDialog())" Variant="Variant.Filled" Color="Color.Error">Erase</MudButton>
+
+                    }
+                </MudToolBar>
+
+
+            </MudPaper>
+        </MudCardContent>
+        <MudCardActions>
+
+        </MudCardActions>
+    </MudCard>
+
+    <MudToolBar Position="Fixed" Bottom="0">
+        <MudText Typo="Typo.caption">Release Version: @versionService.GetReleaseVersion()</MudText>
+    </MudToolBar>
+    <MudDialogPortal>
+    <MudDialog @bind-Visible="@_erase_dialog_visible" Options="dialogOptions">
+        <TitleContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.DeleteForever" Class="mr-3" Color="Color.Error" />Erase Account
+            </MudText>
+        </TitleContent>
+        <DialogContent>
+            <p>
+                This action will completely erase your account and all associated data from all devices and the network,
+                and you will never be able to restore it afterwards.
+            </p>
+            <p>Do you want to erase your account?</p>
+        </DialogContent>
+        <DialogActions>
+            <SmartMudButton NormalText="Erase" WorkingText="Erasing..." ButtonColor="Color.Error" OnButtonClick="EraseAccount" IsWorking="_processing_erase"></SmartMudButton>
+            <MudButton OnClick="CancelErase" Variant="Variant.Filled" Color="Color.Inherit">Cancel</MudButton>
+        </DialogActions>
+    </MudDialog>
+        </MudDialogPortal>
+    <MudDialog @bind-Visible="@delete_dialog_visible" Options="dialogOptions">
+        <TitleContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.Delete" Class="mr-3" Color="Color.Warning" />Delete Account
+            </MudText>
+        </TitleContent>
+        <DialogContent>
+            <p>
+                This action will delete your account from this device.
+                The account will still exist in the network,
+                and you will be able to restore it using the 12-word secret phrase.
+            </p>
+            <p>
+                To be able to restore this account in the future,
+                make sure you back up the secret phrase before you delete.
+            </p>
+            <p>Do you want to delete your account?</p>
+        </DialogContent>
+        <DialogActions>
+            @*<MudButton OnClick="DeleteAccount" Variant="Variant.Filled" Color="Color.Warning">Delete</MudButton>*@
+            <SmartMudButton NormalText="Delete" WorkingText="Deleting..." ButtonColor="Color.Warning" OnButtonClick="DeleteAccount" IsWorking="is_delete_working"></SmartMudButton>
+            <MudButton OnClick="CancelDelete" Variant="Variant.Filled" Color="Color.Inherit">Cancel</MudButton>
+        </DialogActions>
+    </MudDialog>
+</MudPaper>
+
+
+
+@code {
+
+    #region Erase
+
+    private bool _erase_dialog_visible = false;
+    private void ShowEraseDialog() => _erase_dialog_visible = true;
+    private void CancelErase() => _erase_dialog_visible = false;
+    private bool _processing_erase = false;
+
+    protected async Task EraseAccount()
+    {
+        _processing_erase = true;
+        try
+        {
+            if (accountService.CurrentAccount != null)
+            {
+                var result = await sendProcessor.EraseAccount(accountService.CurrentAccount);
+                if (result == string.Empty)
+                {
+                    accountService.CurrentAccount = null;
+                    navigationManager.NavigateTo("/createaccount");
+                    ShowAlert("Account has been erased", Severity.Info);
+                }
+                else
+                {
+                    throw new Exception("Could not erase the following: " + result);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowAlert("Failed to erase account", Severity.Error);
+        }
+        finally
+        {
+            _processing_erase = false;
+            _erase_dialog_visible = false;
+        }
+    }
+
+    #endregion
+
+    #region Delete
+
+    private bool delete_dialog_visible = false;
+    private void ShowDeleteDialog() => delete_dialog_visible = true;
+    private void CancelDelete() => delete_dialog_visible = false;
+    bool is_delete_working = false;
+
+    protected async Task DeleteAccount()
+    {
+        is_delete_working = true;
+        try
+        {
+            if (accountService.CurrentAccount != null)
+            {
+                await sendProcessor.DeleteAccount(accountService.CurrentAccount);
+                accountService.CurrentAccount = null;
+                navigationManager.NavigateTo("/createaccount");
+                ShowAlert("Account has been deleted", Severity.Info);
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowAlert("Failed to delete account", Severity.Error);
+        }
+        finally
+        {
+            delete_dialog_visible = false;
+            is_delete_working = false;
+        }
+    }
+
+    #endregion
+
+
+    private string paperStyle = "height: 93vh; display: flex; flex-direction: column; justify-content: space-between;";
+
+    private MudTextField<string> NicknameReference;
+
+
+    private bool edit_buttons_visible = false;
+    private bool nickname_readonly = true;
+
+    private DialogOptions dialogOptions = new() { FullWidth = true };
+
+    private string Nickname = "";
+    private string Address = "";
+    private string Mnemonic = "";
+    //private string ReadKey = "";
+    //private string ScanKey = "";
+    //private string HiddenScanKey = "";
+    //private string Network = "";
+
+    private string Licenses = "0";
+    private string Rewards = "0";
+
+    bool _authn_checked = false;
+
+    int _lock_timeout_slider_value = TimeoutToSliderValue(ClientConstants.DEFAULT_INACTIVITY_TIMEOUT_SECONDS);
+
+    //const int TEN_YEARS_IN_SECONDS = 10 * 365 * 24 * 60 * 60;
+
+    // Event handler for user-driven changes
+    private async Task OnSliderValueChanged(int newValue)
+    {
+        var timeout_value = SliderValueToTimeout(newValue);
+        StateHasChanged();
+        await sendProcessor.UpdateAccountLockTimeout(timeout_value, accountService.CurrentAccount);
+        await inactivityTimerService.ResetTimer(timeout_value);
+    }
+
+    string GetDisplayLockTimeout()
+    {
+        var timeout_value = SliderValueToTimeout(_lock_timeout_slider_value);
+
+        //if (timeout_value == TEN_YEARS_IN_SECONDS)
+        //    return "Never";
+        if (timeout_value == 30)
+            return "30 seconds";
+        if (timeout_value == 60 * 60)
+            return "1 hour";
+        return (timeout_value / 60).ToString() + " minutes";
+    }
+
+    // returns timeout in seconds
+    int SliderValueToTimeout(int slider_value)
+    {
+        switch (slider_value)
+        {
+            case 0: return 30; // 30 sec
+            case 1: return 60; // 1 min
+            case 2: return 3 * 60; // 3 min
+            case 3: return 5 * 60; // 5 min
+            case 4: return 10 * 60; // 10 min
+            case 5: return 20 * 60; // 20 min
+            case 6: return 30 * 60; // 30 min
+            case 7: return 60 * 60; // 1 hour
+                                    //case 8: return TEN_YEARS_IN_SECONDS; // Never = 10 years to simplify the code
+        }
+        return 5 * 60; // 5 minutes is default
+    }
+
+    static int TimeoutToSliderValue(int timeout_sec)
+    {
+        switch (timeout_sec)
+        {
+            case 30: return 0;
+            case 60: return 1;
+            case 3 * 60: return 2;
+            case 5 * 60: return 3;
+            case 10 * 60: return 4;
+            case 20 * 60: return 5;
+            case 30 * 60: return 6;
+            case 60 * 60: return 7;
+                //case TEN_YEARS_IN_SECONDS: return 8; // Never = 10 years to simplify the code
+        }
+        return 3;
+    }
+
+    bool Authn_checked
+    {
+        get { return _authn_checked; }
+        set
+        {
+            if (_authn_checked != value)
+            {
+                _authn_checked = value;
+                OnCheckedChanged(value);
+
+            }
+        }
+    }
+
+    private int LockTimeoutSliderValue
+    {
+        get { return _lock_timeout_slider_value; }
+        set
+        {
+            if (_lock_timeout_slider_value != value)
+            {
+                _lock_timeout_slider_value = value;
+                OnSliderValueChanged(_lock_timeout_slider_value);
+            }
+        }
+    }
+
+    private async Task OnCheckedChanged(bool isChecked)
+    {
+        //if (!authnService.IsAccessAllowed && isChecked)
+        if (isChecked)
+        {
+            //var result = await webAuthnService.Register(accountService.CurrentAccount.Id);
+            var result = await accessControlService.EnablePasskey(accountService.CurrentAccount.Id);
+            if (result.ResultCode == ResultStatusCodes.SUCCESS)
+            {
+
+                await sendProcessor.UpdateAccountCredentials(result, accountService.CurrentAccount);
+            }
+            else
+            {
+                Authn_checked = false;
+                StateHasChanged();
+            }
+        }
+        else
+        {
+            var result = await accessControlService.DisablePasskey(accountService.CurrentAccount.Id);
+            if (result.ResultCode == ResultStatusCodes.SUCCESS)
+            {
+                await sendProcessor.UpdateAccountCredentials(result, accountService.CurrentAccount);
+            }
+        }
+
+        Console.WriteLine($"Switch is now {(isChecked ? "on" : "off")}");
+    }
+
+    bool is_scan_license_working = false;
+
+    //private async Task ScanLicense()
+    private async Task SyncLicenseWallet()
+    {
+        is_scan_license_working = true;
+        ShowAlert("Scanning for new license tokens", Severity.Info);
+        try
+        {
+            //var result = await sendProcessor.LookForLicense(accountService.CurrentAccount);
+            //License = accountService.GetLicenseDescription();
+            await accountService.CurrentAccount.CurrentWallet.Sync(); 
+            Rewards = accountService.CurrentAccount.Rewards;
+            ShowAlert("License wallet sync has been completed", Severity.Success);
+        }
+        catch (Exception e)
+        {
+            ShowAlert("License wallet sync failed: " + e.Message, Severity.Error);
+        }
+        finally
+        {
+            is_scan_license_working = false;
+        }
+
+    }
+
+    bool is_buy_license_working = false;
+
+    private async Task BuyLicense()
+    {
+        is_buy_license_working = true;
+        try
+        {
+            navigationManager.NavigateTo("https://checkout.mystsafe.com");
+        }
+        finally
+        {
+            is_buy_license_working = false;
+        }
+    }
+
+    Variant _nickname_variant = Variant.Text;
+
+    protected async Task EnableNicknameEdit()
+    {
+        await NicknameReference.SelectAsync();
+        nickname_readonly = false;
+        edit_buttons_visible = true;
+        _nickname_variant = Variant.Outlined;
+    }
+
+    protected async Task SaveEdits()
+    {
+        try
+        {
+            sendProcessor.ValidateNickname(Nickname);
+            nickname_readonly = true;
+            edit_buttons_visible = false;
+            _nickname_variant = Variant.Text;
+            accountService.CurrentAccount.NickName = Nickname;
+            await sendProcessor._Account_Db.Update(accountService.CurrentAccount);
+            ShowAlert("Account nickname has been updated", Severity.Info);
+        }
+        catch (ApplicationException e)
+        {
+            ShowAlert(e.Message, Severity.Warning);
+        }
+        catch (Exception e)
+        {
+            ShowAlert("Could not save edits: " + e.Message, Severity.Error);
+        }
+    }
+
+    protected void CancelEdits()
+    {
+        Nickname = accountService.CurrentAccount.NickName;
+        nickname_readonly = true;
+        edit_buttons_visible = false;
+        _nickname_variant = Variant.Text;
+    }
+
+    protected void CreateAccount()
+    {
+        navigationManager.NavigateTo("/createaccount");
+    }
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        //if (!await accessControlService.IsLoggedIn(accountService.CurrentAccount))
+        //{
+        //    navigationManager.NavigateTo("/locked");
+        //    return;
+        //}
+
+        if (!await accountService.PageSelector(PageTypes.MANAGE_ACCOUNT))
+            return;
+
+        await uiModeNotification.NotifyChanged(UIModes.Account);
+
+        Nickname = accountService.CurrentAccount.NickName;
+        Address = accountService.CurrentAccount.CurrentAddress.ToString();
+        Mnemonic = accountService.CurrentAccount.Mnemonic;
+        //ReadKey = accountService.CurrentAccount.CurrentAddress.ReadKeyBase64;
+        //ScanKey = accountService.CurrentAccount.CurrentAddress.ScanKeyBase64;
+        //HiddenScanKey = accountService.CurrentAccount.CurrentAddress.HiddenScanKeyBase64;
+        //Network = Networks.ToString(accountService.CurrentAccount.Network);
+        Licenses = accountService.CurrentAccount.CurrentWallet.LicenseBalance.ToString("0"); // GetLicenseDescription();
+        Rewards = accountService.CurrentAccount.Rewards;
+        _authn_checked = accountService.CurrentAccount.LocalAuthnType == LocalAuthnTypes.PASSKEY; //!string.IsNullOrEmpty(accountService.CurrentAccount.PasskeyCredentials);
+
+        _lock_timeout_slider_value = TimeoutToSliderValue(accountService.CurrentAccount.LockTimeoutSec);
+
+        await inactivityTimerService.ResetTimer(accountService.CurrentAccount.LockTimeoutSec);
+
+        //await uiModeNotification.NotifyChanged(UIModes.Account);
+    }
+
+    void ShowAlert(string message, Severity severity)
+    {
+        Snackbar.Configuration.SnackbarVariant = Variant.Outlined;
+        Snackbar.Configuration.MaxDisplayedSnackbars = 5;
+        Snackbar.Add(message, severity);
+    }
+
+    async Task ViewSecretExportFile(IBrowserFile file)
+    {
+        try
+        {
+
+            var decrypted_filename = await secretExportService.DecryptExportFile(file, accountService.CurrentAccount.Mnemonic);
+            ShowAlert("Decrypted data has been downoaded into file: " + decrypted_filename, Severity.Success);
+        }
+        catch (Exception e)
+        {
+            ShowAlert("Failed to process file: " + e.Message, Severity.Error);
+        }
+    }
+
+
+
+}

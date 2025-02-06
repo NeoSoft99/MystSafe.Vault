@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Fido2NetLib</RootNamespace>
+    <IsTrimmable>true</IsTrimmable>
+    <NoWarn>IDE0057</NoWarn>
+    <LangVersion>13</LangVersion>
+    <TargetFramework>net9.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Version>1.1.0</Version>
+  </PropertyGroup>
+   
+  <ItemGroup>
+    <None Remove="Fido2MetadataServiceRepository.cs" />
+    <None Remove="FileSystemMetadataRepository.cs" />
+    <None Remove="IMetadataRepository.cs" />
+    <None Remove="Metadata\ConformanceMetadataRepository.cs" />
+    <None Remove="StaticMetadataRepository.cs" />
+  </ItemGroup>
+
+  <!-- References -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.1" />
+    <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="9.0.1" />
+    <PackageReference Include="NSec.Cryptography" Version="24.4.0" />
+    <PackageReference Include="System.Formats.Cbor" Version="9.0.1" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.3.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 
+      The name of the file must equal to the name of the package which is currently
+      defaulting to the project file name (excluding file extension of course)...
+    -->
+    <Content Include="build/fido2.targets" PackagePath="build/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MystSafe.Client.Fido2.Models\MystSafe.Client.Fido2.Models.csproj" />
+  </ItemGroup>
+</Project>

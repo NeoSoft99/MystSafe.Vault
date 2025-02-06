@@ -1,0 +1,169 @@
+﻿@page "/newfolder"
+@using MystSafe.Client.Engine
+@using MystSafe.Shared.Common
+@using MystSafe.Client.App.Components
+@using MystSafe.Client.Base.Components
+
+@inject SendProcessor sendProcessor
+@inject NavigationManager navigationManager
+@inject AccountService accountService
+@inject SecretsDrawerNotification secretsDrawerNotification
+@inject UIModeNotification uiModeNotification
+@inject ISnackbar Snackbar
+
+<MudCard Elevation="0" Class="ma-2">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">@page_title</MudText>
+        </CardHeaderContent>
+        <CardHeaderActions>
+        </CardHeaderActions>
+    </MudCardHeader>
+    <MudCardContent>
+        <MudPaper Elevation="0" Style="display: flex; flex-direction: column;">
+            <SecretTextField @bind-TextValue="FolderName" TextLabel="Folder Name"> </SecretTextField>
+        </MudPaper>
+    </MudCardContent>
+    <MudCardActions>
+        @if (edit_mode)
+        {
+            <MudButton Class="ma-3" OnClick="@(() => CancelEdits())" Variant="Variant.Filled" Color="Color.Inherit">Cancel</MudButton>
+            @*<MudButton Class="ma-3" OnClick="@(() => AddFolder())" Variant="Variant.Filled" Color="Color.Primary">Save</MudButton>*@
+            <SmartMudButton NormalText="Save" WorkingText="Saving..." OnButtonClick="AddFolder" IsWorking="is_working"></SmartMudButton>
+        }
+        else
+        {
+            @*<MudButton Class="ma-3" OnClick="@(() => AddFolder())" Variant="Variant.Filled" Color="Color.Primary">Add Folder</MudButton>*@
+            <SmartMudButton NormalText="Add Folder" WorkingText="Adding..." OnButtonClick="AddFolder" IsWorking="is_working"></SmartMudButton>
+        }
+    </MudCardActions>
+</MudCard>
+<LicenseDialog @bind-IsVisible="license_dialog_visible" Cancel="CancelLicenseDialog"></LicenseDialog>
+
+@code {
+
+
+    // *** license dialog stuff
+    private bool license_dialog_visible = false;
+    private void ShowLicenseDialog() => license_dialog_visible = true;
+    private void CancelLicenseDialog() => license_dialog_visible = false;
+    bool is_working = false;
+    // ***
+
+    void ShowAlert(string message, Severity severity)
+    {
+        Snackbar.Configuration.SnackbarVariant = Variant.Outlined;
+        Snackbar.Configuration.MaxDisplayedSnackbars = 5;
+
+        Snackbar.Add(message, severity);
+    }
+
+    private string FolderName = "";
+    bool edit_mode = false;
+    string page_title = "New Folder";
+
+    protected void CancelEdits()
+    {
+        accountService.CurrentAccount.SecretEditMode = false;
+        navigationManager.NavigateTo("/folder");
+    }
+
+
+    private async Task AddFolder()
+    {
+        if (string.IsNullOrWhiteSpace(FolderName))
+        {
+            ShowAlert("Please specify folder name", Severity.Info);
+            return;
+        }
+
+        if (edit_mode && FolderName == accountService.CurrentAccount.CurrentSecret.Data.Title)
+        {
+            ShowAlert("No changes have been made", Severity.Info);
+            accountService.CurrentAccount.SecretEditMode = false;
+            navigationManager.NavigateTo("/folder");
+            return;
+        }
+
+        is_working = true;
+        try
+        {
+            var secret_block_data = SecretBlockData.New();
+            secret_block_data.Title = FolderName;
+            secret_block_data.SecretType = SecretTypes.Folder;
+
+            SendSecretResult result;
+            if (edit_mode)
+            {
+                secret_block_data.FolderId = accountService.CurrentAccount.CurrentSecret.Data.FolderId;
+                result = await sendProcessor.UpdateSecret(accountService.CurrentAccount.CurrentSecret, secret_block_data);
+            }
+            else
+            {
+                //secret_block_data.FolderId = Guid.NewGuid().ToString();
+                result = await sendProcessor.AddNewSecret(accountService.CurrentAccount, secret_block_data);
+            }
+
+            if (result.ResultCode == ResultStatusCodes.SUCCESS)
+            {
+                accountService.CurrentAccount.SecretEditMode = false;
+                accountService.CurrentAccount.CurrentSecretPubKey = result.NewSecret.BlockPubKey;
+                navigationManager.NavigateTo("/folder");
+                await secretsDrawerNotification.NotifyChanged(false);
+            }
+            else
+            if (result.ResultCode == ResultStatusCodes.LICENSE_VIOLATION)
+            {
+                ShowLicenseDialog();
+            }
+            else
+            {
+                ShowAlert("Could not add folder: " + result.ResultMessage, Severity.Error);
+            }
+        }
+        catch (Exception e)
+        {
+            ShowAlert("Could not add folder: " + e.Message, Severity.Error);
+        }
+        finally
+        {
+            is_working = false;
+        }
+
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        //if (!await accessControlService.IsLoggedIn(accountService.CurrentAccount))
+        //{
+        //    navigationManager.NavigateTo("/locked");
+        //    return;
+        //}
+
+        if (!await accountService.PageSelector(PageTypes.NEW_FOLDER))
+            return;
+
+        if (accountService.CurrentAccount.SecretEditMode)
+        {
+            edit_mode = true;
+            page_title = "Edit folder";
+            FolderName = accountService.CurrentAccount.CurrentSecret.Data.Title;
+
+            var SecretType = accountService.CurrentAccount.CurrentSecret.Data.SecretType;
+
+        }
+        else
+        {
+            //SecretTypeSelected = SecretTypeLabels.SECRET_LOGIN;
+        }
+
+
+        await uiModeNotification.NotifyChanged(UIModes.Secrets);
+
+    }
+
+
+
+
+}
+

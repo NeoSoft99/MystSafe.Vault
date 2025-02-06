@@ -1,0 +1,34 @@
+{
+  "profiles": {
+    "standalone": {
+      "commandName": "Project",
+      "launchBrowser": false,
+      "launchUrl": "http://localhost:5003",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "APPLICATION_PORT": "5003",
+        "ASPNETCORE_URLS": "http://localhost:5003",
+        "MONGODB_CONNECTION_STRING": "mongodb://localhost:27017/",
+        "MONGODB_DATABASE_NAME": "cryptachat-local-dev-db",
+        "NODE_NETWORK": "devnet",
+        "LICENSE_ADMIN_RELAY_URL": "http://localhost:6003"
+      },
+      "dotnetRunMessages": true
+    },
+    "cluster_db": {
+      "commandName": "Project",
+      "launchBrowser": false,
+      "launchUrl": "http://localhost:5003",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "APPLICATION_PORT": "5003",
+        "ASPNETCORE_URLS": "http://localhost:5003",
+        "MONGODB_CONNECTION_STRING": "",
+        "MONGODB_DATABASE_NAME": "cryptachat-atlas-local-cluster-db",
+        "NODE_NETWORK": "devnet",
+        "LICENSE_ADMIN_RELAY_URL": ""
+      },
+      "dotnetRunMessages": true
+    }
+  }
+}

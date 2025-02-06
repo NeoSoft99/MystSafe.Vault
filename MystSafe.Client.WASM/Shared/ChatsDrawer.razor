@@ -1,0 +1,252 @@
+﻿@using MystSafe.Client.Engine
+@using MystSafe.Client.App.Components
+@using MystSafe.Client.Base
+@inject NavigationManager navigationManager
+@inject AccountService accountService
+@inject SendProcessor sendProcessor
+@inject UpdateProcessor updateProcessor
+@implements IDisposable
+@inject ChatsDrawerNotification chatsDrawerNotification
+@inject ChatNotification chatNotification
+@inject MainLayoutNotification mainLayoutNotification
+@inject ISnackbar Snackbar
+@inject BrowserInfoService browserInfo
+@inject AccessControlService accessControlService
+
+<div class="chats-drawer" />
+<MudToolBar Position="Fixed" Top="0">
+    <MudTooltip ShowOnClick=false ShowOnHover="@(!browserInfo.IsMobile)" Text="New Chat">
+        <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Medium" Color="Color.Primary" OnClick="@((e) => NewChat())" />
+    </MudTooltip>
+    @*<MudTooltip ShowOnClick=false ShowOnHover="@(!browserInfo.IsMobile)" Text="Network sync">
+            <MudIconButton Icon="@Icons.Material.Filled.Sync" Size="Size.Medium" Color="Color.Primary" OnClick="@((e) => Sync())" />
+        </MudTooltip>*@
+    <SmartMudIconButton ButtonSize="Size.Medium" ButtonIcon="@Icons.Material.Filled.Sync" Edge="Edge.End" OnButtonClick=Sync TooltipText="Full Chat Sync" IsWorking=is_sync_working />
+
+
+</MudToolBar>
+
+
+<MudList T="Contact" Clickable="true">
+    @foreach (var contact in contacts)
+    {
+        <MudListItem @onclick="(() => GoToChat(contact))">
+            <MudStack Row="true">
+                <MudAvatar Color=@AvatarColor.GetColorFromContact(contact) Size="Size.Medium">@contact.GetUserNameShort()</MudAvatar>
+                <MudStack Row="false" Spacing="0">
+                    <MudText Typo="Typo.body1">@contact.GetCaption()</MudText>
+                    <MudText Typo="Typo.body2">@contact.GetLatestMessageText()</MudText>
+                </MudStack>
+            </MudStack>
+        </MudListItem>
+    }
+</MudList>
+
+
+@code {
+
+
+
+    private Timer? refreshTimer;
+    string selected_id = string.Empty;
+
+    //// Enumerate the values of the Color enum
+    //List<Color> AvailableColors = Enum.GetValues(typeof(Color)).Cast<Color>().ToList();
+
+    //Color GetColorFromContact(Contact contact)
+    //{
+
+    //    if (contact.ColorIndex == -1)
+    //    {
+    //        int hash = contact.Id.GetHashCode();
+    //        // Using Math.Abs to ensure we get a positive index
+    //        contact.ColorIndex = Math.Abs(hash) % AvailableColors.Count;
+    //    }
+    //    return AvailableColors[contact.ColorIndex];
+    //}
+
+
+
+    List<Contact> contacts = new List<Contact>();
+    bool is_sync_working = false;
+
+    async Task Sync()
+    {
+        is_sync_working = true;
+        try
+        {
+            ShowAlert("Looking for chats...", Severity.Info);
+            accountService.CurrentAccount.LastScannedContactBlock = 0;
+            await sendProcessor.LookForNewContactRequests(accountService.CurrentAccount);
+            await Refresh(false);
+            ShowAlert("Chat sync has been completed", Severity.Success);
+        }
+        catch (Exception e)
+        {
+            ShowAlert("Chat sync failed: " + e.Message, Severity.Error);
+        }
+        finally
+        {
+            is_sync_working = false;
+        }
+    }
+
+    void ShowAlert(string message, Severity severity)
+    {
+        Snackbar.Add(message, severity);
+    }
+
+    void IDisposable.Dispose()
+    {
+        refreshTimer?.Dispose();
+        chatsDrawerNotification.OnChanged -= DrawerChanged;
+
+    }
+
+    private async Task NewChat()
+    {
+        if (AccountExists())
+        {
+            await mainLayoutNotification.NotifyChanged(false);
+            navigationManager.NavigateTo(PageUrls.NEW_CHAT);
+        }
+    }
+
+    private bool AccountExists()
+    {
+        if (accountService.CurrentAccount == null)
+        {
+            navigationManager.NavigateTo(PageUrls.CREATE_ACCOUNT);
+            return false;
+        }
+        else
+            return true;
+    }
+
+    private void DrawerChanged(object sender, EventArgs e)
+    {
+        bool TestingInProgress = false;
+        var testingEventArgs = e as TestingEventArgs;
+        if (testingEventArgs != null)
+        {
+            TestingInProgress = testingEventArgs.TestingInProgress;
+        }
+        Refresh(TestingInProgress);
+    }
+
+   
+    private async Task GoToChat(Contact contact)
+    {
+        accountService.CurrentAccount.CurrentContactId = contact.Id;
+        selected_id = contact.Id;
+        await mainLayoutNotification.NotifyChanged(false);
+        navigationManager.NavigateTo(PageUrls.CHAT);
+        await chatNotification.NotifyChanged(false);
+    }
+
+    private async Task<bool> Scan()
+    {
+        if (accountService.CurrentAccount == null)
+            return false;
+
+        var new_contacts = await sendProcessor.LookForNewContactRequests(accountService.CurrentAccount);
+
+        return new_contacts.Count > 0 ;
+    }
+
+    bool refresh_in_progress = false;
+
+    protected async Task Refresh(bool TestingInProgress)
+    {
+        if (refresh_in_progress ||
+            accessControlService.IsAppLocked)
+            return;
+
+        refresh_in_progress = true;
+        try
+        {
+            if (accountService.CurrentAccount == null)
+            {
+                contacts.Clear();
+
+                await InvokeAsync(() =>
+                {
+                    StateHasChanged();
+                });
+                return;
+            }
+
+            var new_contact = await Scan();
+
+            var gc_result = await sendProcessor.ContactGarbageCollector(accountService.CurrentAccount);
+
+            if (accountService.CurrentAccount.Contacts.Count == 0)
+            {
+                contacts.Clear();
+                await InvokeAsync(() =>
+                {
+                    StateHasChanged();
+                });
+                return;
+            }
+            else
+            {
+                // check if there are new contacts added
+                foreach (var contact in accountService.CurrentAccount.Contacts)
+                {
+                    if (!ContactExists(contact))
+                    {
+                        contacts.Add(contact);
+                        await InvokeAsync(() =>
+                        {
+                            StateHasChanged();
+                        });
+                    }
+                }
+                // remove deleted contacts
+                foreach (var contact in contacts)
+                {
+                    if (accountService.CurrentAccount.GetContact(contact.PeerUserAddress) == null)
+                    {
+                        contacts.Remove(contact);
+                        await InvokeAsync(() =>
+                        {
+                            StateHasChanged();
+                        });
+                    }
+                }
+
+            }
+        }
+        catch (Exception e)
+        {
+            ShowAlert("Refresh failed: " + e.Message, Severity.Error);
+        }
+        finally
+        {
+            refresh_in_progress = false;
+        }
+    }
+
+    private bool ContactExists(Contact contact)
+    {
+        foreach (var c in contacts)
+            if (c.Id == contact.Id)
+                return true;
+        return false;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!await accountService.PageSelector(PageTypes.DRAWER))
+            return;
+
+        chatsDrawerNotification.OnChanged += DrawerChanged;
+        Snackbar.Configuration.SnackbarVariant = Variant.Outlined;
+        Snackbar.Configuration.MaxDisplayedSnackbars = 5;
+        refreshTimer = new Timer(_ => InvokeAsync(async () => await Refresh(false)), null, TimeSpan.Zero, TimeSpan.FromSeconds(ClientConstants.CHAT_MESSAGES_UPDATE_INTERVAL_SECONDS));
+    }
+
+
+
+}

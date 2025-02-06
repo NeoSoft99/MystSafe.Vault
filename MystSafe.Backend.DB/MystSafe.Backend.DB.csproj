@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <LangVersion>13</LangVersion>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Title>MystSafe Datbase Layer</Title>
+        <Copyright>MystSafe</Copyright>
+        <Version>1.3.0</Version>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="MongoDB.Driver" Version="3.1.0"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="DBServices\ChatBlockDb.cs"/>
+        <None Include="DBServices\ContactBlockDb.cs"/>
+        <None Include="DBServices\DatabaseService.cs"/>
+        <None Include="DBServices\MsgBlockDb.cs"/>
+        <None Include="DBServices\SecretBlockDb.cs"/>
+    </ItemGroup>
+    <ItemGroup>
+        <Compile Remove="DBServices\LicenseBlockDb %28copy%29.cs"/>
+        <Compile Remove="DBServices\OrdersDb %28copy%29.cs"/>
+        <Compile Remove="DBServices\OrderDb %28copy%29.cs"/>
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\MystSafe.Shared.Common\MystSafe.Shared.Common.csproj"/>
+    </ItemGroup>
+</Project>

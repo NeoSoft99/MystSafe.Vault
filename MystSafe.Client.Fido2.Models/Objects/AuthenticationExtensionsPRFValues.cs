@@ -1,0 +1,44 @@
+﻿// MystSafe is a secret vault with anonymous access and zero activity tracking protected by cryptocurrency-grade tech.
+// 
+//     Copyright (C) 2024-2025 MystSafe, NeoSoft99
+// 
+//     MystSafe: The Only Privacy-Preserving Password Manager.
+//     https://mystsafe.com
+// 
+//     This program is free software: you can redistribute it and/or modify
+//     it under the terms of the GNU Affero General Public License as
+//     published by the Free Software Foundation, either version 3 of the
+//     License, or (at your option) any later version.
+// 
+//     This program is distributed in the hope that it will be useful,
+//     but WITHOUT ANY WARRANTY; without even the implied warranty of
+//     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+//     See the GNU Affero General Public License for more details.
+// 
+//     You should have received a copy of the GNU Affero General Public License
+//     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+using System.Text.Json.Serialization;
+
+namespace Fido2NetLib.Objects;
+
+/// <summary>
+/// Evaluated PRF values.
+/// </summary>
+public sealed class AuthenticationExtensionsPRFValues
+{
+    /// <summary>
+    /// salt1 value to the PRF evaluation.
+    /// </summary>
+    [JsonPropertyName("first")]
+    [JsonConverter(typeof(Base64UrlConverter))]
+    public byte[] First { get; set; }
+    /// <summary>
+    /// salt2 value to the PRF evaluation.
+    /// </summary>
+    [JsonPropertyName("second")]
+    [JsonConverter(typeof(Base64UrlConverter))]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public byte[] Second { get; set; }
+}
+

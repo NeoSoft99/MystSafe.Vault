@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>LicenseWallet</RootNamespace>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Title>MystSafe CryptoLicense client library</Title>
+        <Authors>MystSafe developers</Authors>
+        <Description>MystSafe CryptoLicense client library</Description>
+        <Copyright>MystSafe developers</Copyright>
+        <Version>1.0.5</Version>
+        <LangVersion>13</LangVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\MystSafe.Shared.Common\MystSafe.Shared.Common.csproj" />
+      <ProjectReference Include="..\MystSafe.Shared.CryptoLicense\MystSafe.Shared.CryptoLicense.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.1" />
+      <PackageReference Include="MoneroRing.Crypto" Version="1.3.0" />
+      <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    </ItemGroup>
+
+
+</Project>

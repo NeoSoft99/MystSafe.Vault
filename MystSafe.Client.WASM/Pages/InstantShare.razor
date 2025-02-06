@@ -1,0 +1,301 @@
+﻿
+@page "/instantshare"
+@implements IDisposable
+@using MystSafe.Client.Engine
+@using MystSafe.Shared.Common
+@using System.Timers
+@using MystSafe.Client.App.Components
+@using MystSafe.Client.Base.Components
+@inject SendProcessor sendProcessor
+@inject NavigationManager navigationManager
+@inject AccountService accountService
+@inject UIModeNotification uiModeNotification
+@inject ISnackbar Snackbar
+
+<MudCard Elevation="0" Class="ma-2">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Class="ma-4" Typo="Typo.body1">Time until expiration: @FormatTimeRemaining()</MudText>
+            <MudToolBar Position="Fixed" Top="0">
+                <MudIcon Class="ma-4" Icon="@Icons.Material.Filled.Lock" Color="Color.Default" />
+                <MudText Class="ma-4" Typo="Typo.body1">@SecretTitle</MudText>
+            </MudToolBar>
+        </CardHeaderContent>
+        <CardHeaderActions>
+
+        </CardHeaderActions>
+    </MudCardHeader>
+    <MudCardContent>
+        <MudPaper Elevation="0" Style="display: flex; flex-direction: column;">
+
+            @if (!string.IsNullOrWhiteSpace(SecretPAN))
+            {
+
+                <SecretTextField @bind-TextValue="SecretPAN" TextLabel="Account Number" ReadOnly="true" ClipboardCopyEnabled="true"> </SecretTextField>
+            }
+            @if (!string.IsNullOrWhiteSpace(SecretRoutingNumber))
+            {
+
+                <SecretTextField @bind-TextValue="SecretRoutingNumber" TextLabel="Routing Number" ReadOnly="true" ClipboardCopyEnabled="true"> </SecretTextField>
+
+            }
+            @if (!string.IsNullOrWhiteSpace(SecretLogin))
+            {
+                <SecretTextField @bind-TextValue="SecretLogin" TextLabel="Login" ReadOnly="true" ClipboardCopyEnabled="true"> </SecretTextField>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(SecretPassword))
+            {
+
+                <SecretTextField @bind-TextValue="SecretPassword" TextLabel="Password" ReadOnly="true" InputMaskingEnabled="true" ClipboardCopyEnabled="true"> </SecretTextField>
+
+            }
+            @if (!string.IsNullOrWhiteSpace(SecretURL))
+            {
+
+                <SecretTextField @bind-TextValue="SecretURL" TextLabel="Website Address" ReadOnly="true" ClipboardCopyEnabled="true"> </SecretTextField>
+
+            }
+
+            @if (!string.IsNullOrWhiteSpace(SecretExpDate))
+            {
+
+                <SecretTextField @bind-TextValue="SecretExpDate" TextLabel="Expiration Date" ReadOnly="true" ClipboardCopyEnabled="true"> </SecretTextField>
+
+            }
+            @if (!string.IsNullOrWhiteSpace(SecretCVV))
+            {
+
+                <SecretTextField @bind-TextValue="SecretCVV" TextLabel="Security Code" ReadOnly="true" ClipboardCopyEnabled="true"> </SecretTextField>
+
+            }
+            @if (!string.IsNullOrWhiteSpace(SecretCardholderName))
+            {
+
+                <SecretTextField @bind-TextValue="SecretCardholderName" TextLabel="Cardholder Name" ReadOnly="true" ClipboardCopyEnabled="true"> </SecretTextField>
+
+            }
+            @if (!string.IsNullOrWhiteSpace(SecretAddress))
+            {
+
+                <SecretTextField @bind-TextValue="SecretAddress" TextLabel="Address" ReadOnly="true" ClipboardCopyEnabled="true"> </SecretTextField>
+
+            }
+            @if (!string.IsNullOrWhiteSpace(SecretMnemonic))
+            {
+
+                <SecretTextField @bind-TextValue="SecretMnemonic" TextLabel="Mnemonic Phrase" ReadOnly="true" ClipboardCopyEnabled="true" InputMaskingEnabled="true"> </SecretTextField>
+
+            }
+            @if (!string.IsNullOrWhiteSpace(SecretPrivateKey))
+            {
+
+                <SecretTextField @bind-TextValue="SecretPrivateKey" TextLabel="Private Key" ReadOnly="true" ClipboardCopyEnabled="true" InputMaskingEnabled="true"> </SecretTextField>
+
+            }
+            @if (!string.IsNullOrWhiteSpace(SecretComputerName))
+            {
+
+                <SecretTextField @bind-TextValue="SecretComputerName" TextLabel="Computer" ReadOnly="true" ClipboardCopyEnabled="true"> </SecretTextField>
+
+            }
+            @if (!string.IsNullOrWhiteSpace(SecretDomainName))
+            {
+
+                <SecretTextField @bind-TextValue="SecretDomainName" TextLabel="Domain" ReadOnly="true" ClipboardCopyEnabled="true"> </SecretTextField>
+            }
+            @if (!string.IsNullOrWhiteSpace(SecretPublicKey))
+            {
+
+                <SecretTextField @bind-TextValue="SecretPublicKey" TextLabel="Certificate" ReadOnly="true" ClipboardCopyEnabled="true"> </SecretTextField>
+            }
+            @if (!string.IsNullOrWhiteSpace(SecretDatabase))
+            {
+
+                <SecretTextField @bind-TextValue="SecretDatabase" TextLabel="Connection String" ReadOnly="true" ClipboardCopyEnabled="true"> </SecretTextField>
+
+            }
+
+
+            @if (!string.IsNullOrWhiteSpace(SecretNotes))
+            {
+
+                @*<SecretTextField @bind-TextValue="SecretNotes" TextLabel="Notes" ReadOnly="true" ClipboardCopyEnabled="true"> </SecretTextField>*@
+                <NotesTextField @bind-TextValue="SecretNotes" ReadOnly="true" ClipboardCopyEnabled="true"/>
+            }
+
+        </MudPaper>
+    </MudCardContent>
+</MudCard>
+
+
+@code {
+
+    #region Alerts
+
+    bool show_alert = false;
+    string alertMessage = "";
+
+    void ShowAlert(string message, Severity severity)
+    {
+        Snackbar.Add(message, severity);
+    }
+
+    #endregion Alerts
+
+    private string SecretTitle = "";
+    private string SecretLogin = "";
+    private string SecretPassword = "";
+    private string SecretNotes = "";
+    private string SecretPAN = "";
+    private string SecretExpDate = "";
+    private string SecretURL = "";
+    private string SecretPrivateKey = "";
+    private string SecretPublicKey = "";
+    private string SecretAddress = "";
+    private string SecretComputerName = "";
+    private string SecretDomainName = "";
+    private string SecretMnemonic = "";
+    private string SecretCardholderName = "";
+    private string SecretCVV = "";
+    private string SecretDatabase = "";
+    private string SecretRoutingNumber = "";
+
+    int SecretType = SecretTypes.Other;
+
+    private Timer? countdownTimer;
+    private TimeSpan timeRemaining;
+    private DateTime expirationTime;
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        try
+        {
+            if (!await accountService.PageSelector(PageTypes.INSTANT_SHARE))
+                return;
+
+            await uiModeNotification.NotifyChanged(UIModes.InstantShare);
+
+            Snackbar.Configuration.SnackbarVariant = Variant.Outlined;
+            Snackbar.Configuration.MaxDisplayedSnackbars = 5;
+
+            var link_info = new InstantShareLinkInfo(navigationManager.Uri);
+            var secret = await sendProcessor.GetInstantShareSecret(link_info.BlockHash, link_info.EncryptionKeyBytes);
+
+            if (secret == null)
+            {
+                ShowAlert("Shared secret not found", Severity.Warning);
+                SecretTitle = "Shared secret not found";
+                return;
+            }
+
+            expirationTime = UnixDateTime.ToDateTime(UnixDateTime.AddSeconds(secret.TimeStamp, secret.Expiration));
+            if (expirationTime <= DateTime.Now)
+            {
+                ShowAlert("Shared secret is expired", Severity.Warning);
+                ExpireSecret();
+                return;
+            }
+            SecretTitle = secret.Data.Title;
+            SecretType = secret.Data.SecretType;
+            SecretLogin = secret.Data.Login;
+            SecretPassword = secret.Data.Password;
+            SecretNotes = secret.Data.Notes;
+            SecretPAN = secret.Data.PAN;
+            SecretExpDate = secret.Data.ExpDate;
+            SecretURL = secret.Data.URL;
+            SecretPrivateKey = secret.Data.PrivateKey;
+            SecretPublicKey = secret.Data.PublicKey;
+            SecretAddress = secret.Data.Address;
+            SecretComputerName = secret.Data.ComputerName;
+            SecretDomainName = secret.Data.DomainName;
+            SecretMnemonic = secret.Data.Mnemonic;
+            SecretCardholderName = secret.Data.CardholderName;
+            SecretCVV = secret.Data.CVV;
+            SecretDatabase = secret.Data.DatabaseConnectionString;
+            SecretRoutingNumber = secret.Data.RoutingNumber;
+
+
+            timeRemaining = expirationTime - DateTime.Now;
+            countdownTimer = new Timer(1000); // Set the interval to 1 second
+            countdownTimer.Elapsed += UpdateCountdown;
+            countdownTimer.AutoReset = true;
+            countdownTimer.Start();
+        }
+        catch (Exception e)
+        {
+            ShowAlert(e.Message, Severity.Warning);
+        }
+
+    }
+
+    private string FormatTimeRemaining()
+    {
+        var parts = new List<string>();
+        if (timeRemaining.Hours > 0) parts.Add($"{timeRemaining.Hours} hour{(timeRemaining.Hours > 1 ? "s" : "")}");
+        if (timeRemaining.Minutes > 0) parts.Add($"{timeRemaining.Minutes} minute{(timeRemaining.Minutes > 1 ? "s" : "")}");
+        if (timeRemaining.Seconds > 0) parts.Add($"{timeRemaining.Seconds} second{(timeRemaining.Seconds > 1 ? "s" : "")}");
+
+        return parts.Count > 0 ? string.Join(" ", parts) : "0 seconds";
+    }
+
+    private void UpdateCountdown(Object source, ElapsedEventArgs e)
+    {
+        if (DateTime.Now >= expirationTime)
+        {
+            countdownTimer?.Stop();
+            ExpireSecret();
+            InvokeAsync(() =>
+            {
+                StateHasChanged();
+            });
+        }
+        else
+        {
+            timeRemaining = expirationTime - DateTime.Now;
+
+            // This is necessary to refresh the UI
+            InvokeAsync(() =>
+            {
+                StateHasChanged();
+            });
+        }
+    }
+
+    private void ExpireSecret()
+    {
+        SecretTitle = "Shared secret is expired";
+        SecretLogin = "";
+        SecretPassword = "";
+        SecretNotes = "";
+        SecretPAN = "";
+        SecretExpDate = "";
+        SecretURL = "";
+        SecretPrivateKey = "";
+        SecretPublicKey = "";
+        SecretAddress = "";
+        SecretComputerName = "";
+        SecretDomainName = "";
+        SecretMnemonic = "";
+        SecretCardholderName = "";
+        SecretCVV = "";
+        SecretDatabase = "";
+        SecretRoutingNumber = "";
+
+    }
+
+    void IDisposable.Dispose()
+    {
+        countdownTimer?.Dispose();
+    }
+
+
+
+
+
+}
+
+

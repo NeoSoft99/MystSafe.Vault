@@ -1,0 +1,42 @@
+﻿@inject NavigationManager navigationManager
+
+<MudDialog @bind-Visible="IsVisible" Options="licenseDialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.AccessAlarm" Class="mr-3" />License Alert
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <p>
+            You are using Free license which does not allow this feature.
+        </p>
+    </DialogContent>
+    <DialogActions>
+        @*<MudButton Class="ma-4" OnClick="BuyLicense" Variant="Variant.Filled" Color="Color.Primary">Buy Premium</MudButton>*@
+        <SmartMudButton NormalText="Buy Premium" WorkingText="Wait..." OnButtonClick="BuyLicense" IsWorking="is_working"></SmartMudButton>
+        <MudButton OnClick="Cancel" Variant="Variant.Filled" Color="Color.Inherit">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public EventCallback<bool> IsVisibleChanged { get; set; }
+    [Parameter] public EventCallback Cancel { get; set; }
+    bool is_working = false;
+
+    private DialogOptions licenseDialogOptions = new() { FullWidth = true };
+
+    private void BuyLicense()
+    {
+        is_working = true;
+        try
+        {
+            navigationManager.NavigateTo("https://checkout.mystsafe.com");
+        }
+        finally
+        {
+            is_working = false;
+        }
+    }
+    }
+

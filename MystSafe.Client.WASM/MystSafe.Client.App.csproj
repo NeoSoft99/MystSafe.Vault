@@ -1,0 +1,78 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
+    <ReleaseVersion>0.3.3</ReleaseVersion>
+    <LangVersion>13</LangVersion>
+    <DebuggerSupport Condition="'$(Configuration)' == 'DebugCustom'">true</DebuggerSupport>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <BlazorEnableCompressionSupport>false</BlazorEnableCompressionSupport>
+  </PropertyGroup>
+
+  <Target Name="PreCompile" BeforeTargets="BeforeCompile">
+    <ItemGroup>
+      <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+        <_Parameter1>ReleaseVersion</_Parameter1>
+        <_Parameter2>$(ReleaseVersion)</_Parameter2>
+      </AssemblyAttribute>
+    </ItemGroup>
+    <WriteCodeFragment AssemblyAttributes="@(AssemblyAttribute)" OutputDirectory="$(IntermediateOutputPath)" Language="C#" />
+  </Target>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>anycpu</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(RunConfiguration)' == 'http' ">
+    <ExternalConsole>true</ExternalConsole>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.1" PrivateAssets="all" />
+    <PackageReference Include="IndexedDB.Blazor" Version="1.1.1" />
+    <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
+    <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="9.0.1" />
+    <PackageReference Include="Microsoft.NET.Sdk.WebAssembly.Pack" Version="9.0.1" />
+    <PackageReference Include="MudBlazor" Version="8.2.0" />
+    <PackageReference Include="Universal.Microsoft.AspNetCore.Components.Web" Version="4.0.0" />
+    <PackageReference Include="BlazorDownloadFile" Version="2.4.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="Pages\FetchData.razor" />
+    <Content Remove="wwwroot\favicon.ico" />
+    <Content Remove="wwwroot\js\" />
+    <Content Include="..\.dockerignore">
+      <Link>.dockerignore</Link>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MystSafe.Client.Base\MystSafe.Client.Base.csproj" />
+    <ProjectReference Include="..\MystSafe.Client.CryptoLicense\MystSafe.Client.CryptoLicense.csproj" />
+    <ProjectReference Include="..\MystSafe.Client.Engine\MystSafe.Client.Engine.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="DB\" />
+    <None Remove="Services\" />
+    <None Remove="Components\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Services\" />
+    <Folder Include="Components\" />
+    <Folder Include="wwwroot\js\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Components\UpdateAvailableDetector.razor.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </None>
+  </ItemGroup>
+
+</Project>

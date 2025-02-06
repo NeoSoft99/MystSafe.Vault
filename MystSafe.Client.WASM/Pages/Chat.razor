@@ -1,0 +1,850 @@
+﻿@page "/chat"
+@implements IDisposable
+@using MystSafe.Client.Engine
+@using MystSafe.Shared.Common
+@using MystSafe.Client.App.Components
+@using MystSafe.Client.Base
+@using MystSafe.Client.Base.Components
+@using MystSafe.Shared.Crypto
+
+@inject SendProcessor sendProcessor
+@inject UpdateProcessor updateProcessor
+@inject NavigationManager navigationManager
+@inject AccountService accountService
+@inject ChatNotification chatNotification
+@inject IJSRuntime JSRuntime
+@inject BrowserInfoService browserInfo
+@inject UIModeNotification uiModeNotification
+@inject ChatsDrawerNotification chatDrawerNotification
+@inject ISnackbar Snackbar
+@inject DrawerState drawerState
+@inject AccessControlService accessControlService
+
+<MudPaper Elevation="0" Style="@paperStyle">
+    <MudPaper Elevation="0">
+        <MudToolBar Position="Fixed" Top="0">
+            <MudAvatar Class="mr-5" Color=@GetAvatarColor()>@GetUserNameShort()</MudAvatar>
+            <MudText Typo="Typo.body1">@GetCaption()</MudText>
+            <MudSpacer />
+
+            <MudTooltip ShowOnClick=false ShowOnHover="@(!browserInfo.IsMobile)" Text="Delete chat">
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Primary" OnClick="ShowDeleteContactDialog" />
+            </MudTooltip>
+
+            @if (GetCurrentContactStatus() == ContactStatuses.Established)
+            {
+                <MudTooltip ShowOnClick=false ShowOnHover="@(!browserInfo.IsMobile)" Text="Edit contact name">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" OnClick="ShowContactEditDialog" />
+                </MudTooltip>
+            }
+        </MudToolBar>
+
+    </MudPaper>
+
+    <div class="d-flex flex-column px-4" style="max-height:65vh;min-height:65vh; overflow:scroll;" id="messageContainerRef">
+        @foreach (var message in messages)
+        {
+            <MudPaper Elevation="0" MaxWidth="75%" Style="@(message.Direction == MessageDirections.Incoming ? "margin-right: auto;" : "margin-left: auto;")">
+                <MudCard Class="ma-2" Outlined="true" Position="Fixed" Right="0">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.body2" Style="color: gray;">@FormatMessageDateTime(message.TimeStamp)</MudText>
+                        </CardHeaderContent>
+                        <CardHeaderActions>
+                            @if (message.Direction == MessageDirections.Outgoing)
+                            {
+                                <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Delete" Color="Color.Primary" OnClick="(() => ShowMessageDeleteDialog(message.Id))" />
+                            }
+                        </CardHeaderActions>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        @if (message.MessageData.MessageType == MessageTypes.TEXT)
+                        {
+                            <MudText Typo="Typo.body1">@message.MessageData.MsgText</MudText>
+                        }
+                        else
+                    if (message.MessageData.MessageType == MessageTypes.SECRET)
+                        {
+                            <MudText Typo="Typo.body1">@message.SecretData.Title</MudText>
+
+                            @if (!string.IsNullOrWhiteSpace(message.SecretData.Login))
+                            {
+
+                                <MudTextField Class="ma-2" @bind-Value="message.SecretData.Login" T="string" Label="Login" Variant="Variant.Text" ReadOnly="true" />
+
+                            }
+
+                            @if (!string.IsNullOrWhiteSpace(message.SecretData.Password))
+                            {
+
+                                <MudTextField Class="ma-2" @bind-Value="message.SecretData.Password" T="string" Label="Password" Variant="Variant.Text" ReadOnly="true" InputType="@PasswordInput" Adornment="Adornment.End" AdornmentIcon="@PasswordInputIcon" OnAdornmentClick="ButtonTestclick" />
+
+                            }
+                            @if (!string.IsNullOrWhiteSpace(message.SecretData.URL))
+                            {
+
+                                <MudTextField Class="ma-2" @bind-Value="message.SecretData.URL" T="string" Label="URL" Variant="Variant.Text" ReadOnly="true" />
+
+                            }
+                            @if (!string.IsNullOrWhiteSpace(message.SecretData.PAN))
+                            {
+
+                                <MudTextField Class="ma-2" @bind-Value="message.SecretData.PAN" Mask="@(new PatternMask("0000 0000 0000 0000"))" T="string" Label="Account Number" Variant="Variant.Text" ReadOnly="true" Clearable />
+
+                            }
+                            @if (!string.IsNullOrWhiteSpace(message.SecretData.ExpDate))
+                            {
+
+                                <MudTextField Class="ma-2" @bind-Value="message.SecretData.ExpDate" Mask="@(new DateMask("MM / YY", 'Y', 'M'))" T="string" Label="Expiration Date" Variant="Variant.Text" ReadOnly="true" />
+
+                            }
+                            @if (!string.IsNullOrWhiteSpace(message.SecretData.CVV))
+                            {
+
+                                <MudTextField Class="ma-2" @bind-Value="message.SecretData.CVV" Mask="@(new PatternMask("000"))" T="string" Label="Security Code" Variant="Variant.Text" ReadOnly="true" />
+
+                            }
+                            @if (!string.IsNullOrWhiteSpace(message.SecretData.CardholderName))
+                            {
+
+                                <MudTextField Class="ma-2" @bind-Value="message.SecretData.CardholderName" T="string" Label="Cardholder Name" Variant="Variant.Text" ReadOnly="true" />
+
+                            }
+                            @if (!string.IsNullOrWhiteSpace(message.SecretData.Address))
+                            {
+
+                                <MudTextField Class="ma-2" @bind-Value="message.SecretData.Address" T="string" Label="Address" Variant="Variant.Text" ReadOnly="true" />
+
+                            }
+                            @if (!string.IsNullOrWhiteSpace(message.SecretData.Mnemonic))
+                            {
+
+                                <MudTextField Class="ma-2" @bind-Value="message.SecretData.Mnemonic" T="string" Label="Mnemonic phrase" Variant="Variant.Text" Lines="3" ReadOnly="true" />
+
+                            }
+                            @if (!string.IsNullOrWhiteSpace(message.SecretData.PrivateKey))
+                            {
+
+                                <MudTextField Class="ma-2" @bind-Value="message.SecretData.PrivateKey" T="string" Label="PrivateKey" Variant="Variant.Text" ReadOnly="true" />
+
+                            }
+                            @if (!string.IsNullOrWhiteSpace(message.SecretData.ComputerName))
+                            {
+
+                                <MudTextField Class="ma-2" @bind-Value="message.SecretData.ComputerName" T="string" Label="Computer" Variant="Variant.Text" ReadOnly="true" />
+
+                            }
+                            @if (!string.IsNullOrWhiteSpace(message.SecretData.DomainName))
+                            {
+
+                                <MudTextField Class="ma-2" @bind-Value="message.SecretData.DomainName" T="string" Label="Domain" Variant="Variant.Text" ReadOnly="true" />
+
+                            }
+                            @if (!string.IsNullOrWhiteSpace(message.SecretData.PublicKey))
+                            {
+
+                                <MudTextField Class="ma-2" @bind-Value="message.SecretData.PublicKey" T="string" Label="Certificate" Variant="Variant.Text" Lines="3" ReadOnly="true" />
+
+                            }
+                            @if (!string.IsNullOrWhiteSpace(message.SecretData.DatabaseConnectionString))
+                            {
+
+                                <MudTextField Class="ma-2" @bind-Value="message.SecretData.DatabaseConnectionString" T="string" Label="Connection String" Variant="Variant.Text" ReadOnly="true" />
+
+                            }
+                            @if (!string.IsNullOrWhiteSpace(message.SecretData.Notes))
+                            {
+
+                                <MudTextField Class="ma-2" @bind-Value="message.SecretData.Notes" T="string" Label="Notes" Variant="Variant.Text" Lines="2" ReadOnly="true" />
+
+                            }
+
+                            @if (message.Direction == MessageDirections.Incoming && accountService.CurrentAccount.GetSecretByTitle(message.SecretData.Title) == null)
+                            {
+                                <MudButton Class="ma-4" OnClick="@(() => AddToSecrets(message.SecretData))" Variant="Variant.Filled" Color="Color.Primary"> Add to Secrets</MudButton>
+
+                            }
+
+                            @if (accountService.CurrentAccount.GetSecretByTitle(message.SecretData.Title) != null)
+                            {
+                                <MudButton Class="ma-4" OnClick="@(() => ViewInSecrets(message.SecretData.Title))" Variant="Variant.Outlined" Color="Color.Primary"> View in Secrets </MudButton>
+
+                            }
+                        }
+                    </MudCardContent>
+                </MudCard>
+            </MudPaper>
+        }
+
+        @if (GetCurrentContactStatus() == ContactStatuses.RequestReceived)
+        {
+            <MudPaper Elevation="0" MaxWidth="75%" Style="margin-right: auto;">
+                <MudCard Class="ma-2" Outlined="true" Position="Fixed" Right="0">
+                    <MudCardContent>
+                        <MudText Typo="Typo.body2" Style="color: gray;"> @FormatMessageDateTime(accountService.CurrentAccount.CurrentContact.TimeStampIn) </MudText>
+                        <MudText Typo="Typo.body1">
+                            <p> You have got a new chat request! </p>
+                            <p> Nickname: @GetPeerNickname() </p>
+                            <p> Address: @GetPeerAddress() </p>
+                        </MudText>
+                        <MudButton Class="ma-4" OnClick="AcceptContactRequest" Variant="Variant.Filled" Color="Color.Primary"> Accept </MudButton>
+                        <MudButton Class="ma-4" OnClick="IgnoreContactRequest" Variant="Variant.Filled" Color="Color.Inherit"> Ignore </MudButton>
+                    </MudCardContent>
+                </MudCard>
+            </MudPaper>
+        }
+        else
+       if (GetCurrentContactStatus() == ContactStatuses.RequestSent)
+        {
+            <MudPaper Elevation="0" MaxWidth="75%" Style="margin-left: auto;">
+                <MudCard Class="ma-2" Outlined="true" Position="Fixed" Right="0">
+                    <MudCardContent>
+                        <MudText Typo="Typo.body2" Style="color: gray;"> @FormatMessageDateTime(accountService.CurrentAccount.CurrentContact.TimeStampOut) </MudText>
+                        <MudText Typo="Typo.body1">
+                            <p> Contact request has been sent, waiting for reply.</p>
+                        </MudText>
+                    </MudCardContent>
+                </MudCard>
+            </MudPaper>
+        }
+        else
+       if (GetCurrentContactStatus() == ContactStatuses.Established && messages.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info" ContentAlignment="HorizontalAlignment.Center" ShowCloseIcon="false"> You have establised connection with this user and can send messages.</MudAlert>
+        }
+
+        @if (show_delete_contact_dialog)
+        {
+            <MudPaper Elevation="0" MaxWidth="75%" Style="margin-right: auto;">
+                <MudCard Class="ma-2" Outlined="true" Position="Fixed" Right="0">
+                    <MudCardContent>
+                        <MudText Typo="Typo.body2" Style="color: gray;"> @FormatMessageDateTime(accountService.CurrentAccount.CurrentContact.TimeStampIn) </MudText>
+                        <MudText Typo="Typo.body1">
+                            <p> You are about to delete this chat and all associated messages from this device.</p>
+                            <p> Note that it will still be retained in the network, your other devices, and available to your chat peer.</p>
+                            <p> The messages will be gradually deleted once expired.</p>
+                        </MudText>
+                        <MudButton Class="ma-4" OnClick="DeleteContact" Variant="Variant.Filled" Color="Color.Primary"> Delete </MudButton>
+                        <MudButton Class="ma-4" OnClick="CloseDeleteContactDialog" Variant="Variant.Filled" Color="Color.Inherit"> Cancel </MudButton>
+                    </MudCardContent>
+                </MudCard>
+            </MudPaper>
+        }
+
+        <MudDialog @bind-Visible="contact_edit_dialog_visible" Options="dialogOptions">
+            <TitleContent>
+                <MudText Typo="Typo.h6">
+                    <MudIcon Icon="@Icons.Material.Filled.Edit" Class="mr-3" />Edit Contact Details
+                </MudText>
+            </TitleContent>
+            <DialogContent>
+                <MudToolBar Class="ma-3">
+                    <MudTextField @bind-Value="ContactName" T="string" Label="Edit Contact Name" Variant="Variant.Outlined" ReadOnly=false />
+                </MudToolBar>
+            </DialogContent>
+            <DialogActions>
+                <MudButton Class="ma-4" OnClick="SaveContactEdits" Variant="Variant.Filled" Color="Color.Primary">Save</MudButton>
+                <MudButton Class="ma-4" OnClick="CancelContactEditDialog" Variant="Variant.Filled" Color="Color.Inherit">Cancel</MudButton>
+            </DialogActions>
+        </MudDialog>
+    </div>
+
+    <MudPaper Elevation="0">
+        <MudToolBar Position="Fixed" Bottom="0">
+            <MudTextField @bind-Value="Message" Label="Message" Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@(GetCurrentContactStatus() != ContactStatuses.Established)"></MudTextField>
+
+            @*<MudIconButton Icon="@Icons.Material.Filled.Send" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => SendMessage())" Disabled="@(GetCurrentContactStatus() != ContactStatuses.Established)" />*@
+            <SmartMudIconButton ButtonSize="Size.Medium" ButtonIcon="@Icons.Material.Filled.Send" ButtonColor="Color.Inherit" Edge="Edge.End" OnButtonClick=@((e) => SendMessage()) Disabled="@(GetCurrentContactStatus() != ContactStatuses.Established)" TooltipText="Send Message" IsWorking=is_send_working />
+
+        </MudToolBar>
+    </MudPaper>
+
+</MudPaper>
+
+<MudDialog @bind-Visible="show_message_delete_dialog" Options="dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Delete" Class="mr-3" />Delete message
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Typo="Typo.body1">
+            <p>You are about to delete this message.</p>
+            <p>Note that it will delete it from the network,</p>
+            <p>your peer's devices, and your other devices.</p>
+        </MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Class="ma-4" OnClick="DeleteMessage" Variant="Variant.Filled" Color="Color.Primary">Delete</MudButton>
+        <MudButton Class="ma-4" OnClick="CloseMessageDeleteDialog" Variant="Variant.Filled" Color="Color.Inherit">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<LicenseDialog @bind-IsVisible="license_dialog_visible" Cancel="CancelLicenseDialog"></LicenseDialog>
+
+@code {
+    #region  license dialog stuff
+
+    private bool license_dialog_visible = false;
+    private void ShowLicenseDialog() => license_dialog_visible = true;
+    private void CancelLicenseDialog() => license_dialog_visible = false;
+    #endregion license dialog stuff
+
+    #region Contact edit dialog stuff
+
+    private bool contact_edit_dialog_visible = false;
+    private void ShowContactEditDialog()
+    {
+        if (accountService.CurrentAccount == null || accountService.CurrentAccount.CurrentContact == null)
+            return;
+
+        ContactName = accountService.CurrentAccount.CurrentContact.GetCaption();
+
+        contact_edit_dialog_visible = true;
+    }
+    private void CancelContactEditDialog() => contact_edit_dialog_visible = false;
+    private DialogOptions dialogOptions = new() { FullWidth = true };
+    private string ContactName = string.Empty;
+
+    protected async Task SaveContactEdits()
+    {
+        try
+        {
+            contact_edit_dialog_visible = false;
+
+            var update_result = await sendProcessor.UpdateContactName(accountService.CurrentAccount.CurrentContact, ContactName);
+            if (update_result.ResultCode == ResultStatusCodes.SUCCESS)
+            {
+                ShowAlert("The contact has been updated", Severity.Success);
+
+                await chatDrawerNotification.NotifyChanged();
+
+            }
+            else
+            {
+                ShowAlert("Could not update the contact: " + update_result.ResultMessage, Severity.Error);
+            }
+
+        }
+
+        catch (Exception e)
+        {
+            ShowAlert("Could not save edits", Severity.Error);
+        }
+    }
+    #endregion Contact edit dialog stuff
+
+    #region Message delete
+
+    private void CloseMessageDeleteDialog()
+    {
+        show_message_delete_dialog = false;
+        message_id_to_delete = string.Empty;
+    }
+
+    bool show_message_delete_dialog = false;
+    string message_id_to_delete = string.Empty;
+
+    void ShowMessageDeleteDialog(string message_id)
+    {
+        if (accountService.CurrentAccount == null ||
+            accountService.CurrentAccount.CurrentContact == null ||
+            string.IsNullOrEmpty(message_id))
+        {
+            return;
+        }
+        show_message_delete_dialog = true;
+        message_id_to_delete = message_id;
+    }
+
+    private async Task DeleteMessage()
+    {
+        try
+        {
+            var message_to_delete = GetMessage(message_id_to_delete);
+
+            var delete_result = await sendProcessor.DeleteMessage(message_to_delete);
+            if (delete_result.ResultCode == ResultStatusCodes.SUCCESS)
+            {
+                ShowAlert("The message has been deleted", Severity.Success);
+                messages = accountService.CurrentAccount.CurrentContact.GetAllMessages();
+                StateHasChanged();
+                await ScrollToBottomAsync();
+
+            }
+            else
+            {
+                ShowAlert("Could not delete the message", Severity.Error);
+            }
+        }
+        catch (Exception e)
+        {
+            ShowAlert("Could not delete the message" + e.Message, Severity.Error);
+        }
+        finally
+        {
+            CloseMessageDeleteDialog();
+        }
+    }
+
+    Message GetMessage(string message_id)
+    {
+        int index = messages.FindIndex(message => message.Id == message_id);
+        if (index != -1)
+            return messages[index];
+        else
+            return null;
+    }
+    #endregion Message delete
+
+    #region DELETE CONTACT
+    bool show_delete_contact_dialog = false;
+    private void CloseDeleteContactDialog() => show_delete_contact_dialog = false;
+
+    void ShowDeleteContactDialog()
+    {
+        if (accountService.CurrentAccount == null || accountService.CurrentAccount.CurrentContact == null)
+            return;
+        show_delete_contact_dialog = true;
+    }
+
+    private async Task DeleteContact()
+    {
+        CloseDeleteContactDialog();
+        try
+        {
+            var delete_result = await sendProcessor.DeleteContact(accountService.CurrentAccount.CurrentContact);
+            if (delete_result.ResultCode == ResultStatusCodes.SUCCESS)
+            {
+                ShowAlert("The contact has been deleted", Severity.Success);
+
+                await chatDrawerNotification.NotifyChanged();
+                navigationManager.NavigateTo("/newchat");
+            }
+            else
+            {
+                ShowAlert("Could not delete the contact", Severity.Error);
+            }
+        }
+        catch (Exception e)
+        {
+            ShowAlert("Could not delete the contact" + e.Message, Severity.Error);
+        }
+    }
+
+    #endregion DELETE CONTACT
+
+
+
+    bool isShow;
+    InputType PasswordInput = InputType.Password;
+    string PasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+
+    void ButtonTestclick()
+    {
+        @if (isShow)
+        {
+            isShow = false;
+            PasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+            PasswordInput = InputType.Password;
+        }
+        else
+        {
+            isShow = true;
+            PasswordInputIcon = Icons.Material.Filled.Visibility;
+            PasswordInput = InputType.Text;
+        }
+    }
+
+    private Timer? refreshTimer;
+    private string paperStyle = "height: 93vh; display: flex; flex-direction: column; justify-content: space-between;";
+
+
+    List<Message> messages = new List<Message>();
+    string contact_id = "";
+
+    bool update_in_progress = false;
+
+    ContactStatuses last_status = ContactStatuses.NotFound;
+
+
+    string GetUserNameShort()
+    {
+        if (accountService.CurrentAccount == null || accountService.CurrentAccount.CurrentContact == null)
+            return string.Empty;
+
+        return accountService.CurrentAccount.CurrentContact.GetUserNameShort();
+
+    }
+
+    Color GetAvatarColor()
+    {
+        if (accountService.CurrentAccount == null || accountService.CurrentAccount.CurrentContact == null)
+            return Color.Default;
+
+        return AvatarColor.GetColorFromContact(accountService.CurrentAccount.CurrentContact);
+
+    }
+
+    string GetCaption()
+    {
+        if (accountService.CurrentAccount == null || accountService.CurrentAccount.CurrentContact == null)
+            return string.Empty;
+
+        return accountService.CurrentAccount.CurrentContact.GetCaption();
+
+    }
+
+    string GetPeerNickname()
+    {
+        if (accountService.CurrentAccount == null || accountService.CurrentAccount.CurrentContact == null)
+            return string.Empty;
+
+        return accountService.CurrentAccount.CurrentContact.PeerNickName;
+
+    }
+
+    string GetPeerAddress()
+    {
+        if (accountService.CurrentAccount == null || accountService.CurrentAccount.CurrentContact == null)
+            return string.Empty;
+
+        return accountService.CurrentAccount.CurrentContact.PeerUserAddress;
+
+    }
+
+    string FormatMessageDateTime(long unix_timestamp)
+    {
+        var timestamp = UnixDateTime.ToDateTime(unix_timestamp);
+        string result = string.Empty;
+        if (timestamp.Year != DateTime.Now.Year)
+            result += timestamp.Year + " ";
+        if (timestamp.Date != DateTime.Now.Date)
+            result += timestamp.ToShortDateString() + " ";
+        result += timestamp.ToShortTimeString();
+        return result;
+    }
+
+    ContactStatuses GetCurrentContactStatus()
+    {
+        if (accountService.CurrentAccount == null || accountService.CurrentAccount.CurrentContact == null)
+            return ContactStatuses.NotFound;
+
+        return accountService.CurrentAccount.CurrentContact.Status;
+    }
+
+    protected async Task AcceptContactRequest()
+    {
+
+        var contact_out_result = await sendProcessor.NewContactRequest(
+                accountService.CurrentAccount,
+                accountService.CurrentAccount.CurrentContact.PeerUserAddress);
+        //Message);
+        if (contact_out_result != null && contact_out_result.ResultCode == 0)
+        {
+
+            //await UpdateChat();
+        }
+        else
+        {
+            ShowAlert("Could not reply to contact request", Severity.Error);
+        }
+        StateHasChanged();
+
+    }
+
+    protected async Task AddToSecrets(SecretBlockData secretData)
+    {
+        try
+        {
+            var result = await sendProcessor.AddNewSecret(
+            accountService.CurrentAccount,
+            secretData
+            );
+            //Message);
+            if (result.ResultCode == ResultStatusCodes.SUCCESS)
+            {
+                ShowAlert("The secret has been added to your Secrets", Severity.Success);
+            }
+            else
+            if (result.ResultCode == ResultStatusCodes.LICENSE_VIOLATION)
+            {
+                ShowLicenseDialog();
+            }
+            else
+            {
+                ShowAlert("Could not add secret: " + result.ResultMessage, Severity.Error);
+            }
+        }
+        catch (Exception e)
+        {
+            ShowAlert("Could not add secret: " + e.Message, Severity.Error);
+        }
+    }
+
+    protected async Task ViewInSecrets(string secret_title)
+    {
+        var secret = accountService.CurrentAccount.GetSecretByTitle(secret_title);
+        accountService.CurrentAccount.SecretEditMode = false;
+        accountService.CurrentAccount.CurrentSecretPubKey = secret.BlockPubKey;
+        navigationManager.NavigateTo("/secret");
+    }
+
+    protected async Task IgnoreContactRequest()
+    {
+        try
+        {
+            if (accountService.CurrentAccount.CurrentContact == null)
+                return;
+            await sendProcessor.DeleteContactFromLocalStorage(accountService.CurrentAccount.CurrentContact.Id, accountService.CurrentAccount.Id);
+            accountService.CurrentAccount.RemoveContact(accountService.CurrentAccount.CurrentContact.PeerUserAddress);
+            accountService.CurrentAccount.CurrentContactId = null;
+            show_delete_contact_dialog = false;
+            StateHasChanged();
+            //navigationManager.NavigateTo("/newchat");
+        }
+        catch
+        {
+            ShowAlert("Could not delete the contact request", Severity.Error);
+        }
+
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        //if (firstRender)
+        //{
+        await ScrollToBottomAsync();
+        //}
+    }
+
+    private async Task ScrollToBottomAsync()
+    {
+        //await Task.Delay(500);
+        await JSRuntime.InvokeVoidAsync("ScrollToBottom", "messageContainerRef");
+        //await messageContainerRef.MudFocusLastAsync();
+    }
+
+    protected async Task UpdateChat()
+    {
+        if (update_in_progress ||
+            accessControlService.IsAppLocked)
+            return;
+
+        update_in_progress = true;
+        try
+        {
+            if (accountService.CurrentAccount == null)
+            {
+                navigationManager.NavigateTo("/creataccount");
+                return;
+            }
+
+            if (accountService.CurrentAccount.CurrentContact == null)
+            {
+                navigationManager.NavigateTo("/newchat");
+                return;
+            }
+
+            bool scan_result = await Scan();
+
+            var new_messages = accountService.CurrentAccount.CurrentContact.GetAllMessages();
+
+            if (accountService.CurrentAccount.CurrentContact.Id != contact_id)
+            {
+                contact_id = accountService.CurrentAccount.CurrentContact.Id;
+                messages = new_messages;
+                StateHasChanged();
+                await ScrollToBottomAsync();
+                return;
+
+            }
+
+            if (messages.Count != new_messages.Count)
+            {
+                messages = new_messages;
+                StateHasChanged();
+                await ScrollToBottomAsync();
+                return;
+            }
+
+
+            if (scan_result)
+            {
+                messages = new_messages;
+                StateHasChanged();
+                await ScrollToBottomAsync();
+                return;
+            }
+
+            if (last_status != accountService.CurrentAccount.CurrentContact.Status)
+            {
+                last_status = accountService.CurrentAccount.CurrentContact.Status;
+                StateHasChanged();
+                await ScrollToBottomAsync();
+                return;
+            }
+
+        }
+        finally
+        {
+            update_in_progress = false;
+        }
+
+    }
+
+    private async Task<bool> Scan()
+    {
+        bool new_contacts = false;
+        var new_chat_or_message = false;
+
+        if (accountService.CurrentAccount.CurrentContact.Status == ContactStatuses.RequestSent &&
+            !drawerState.IsOpen)
+        {
+            var new_contact = await sendProcessor.LookForNewContactRequests(accountService.CurrentAccount);
+            if (new_contact != null)
+                new_contacts = true;
+        }
+
+        if (accountService.CurrentAccount.CurrentContact.Status == ContactStatuses.Established)
+        {
+            new_chat_or_message = await updateProcessor.LookForChatUpdates(accountService.CurrentAccount.CurrentContact);
+
+        }
+
+        return new_contacts || new_chat_or_message;
+    }
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        if (!await accountService.PageSelector(PageTypes.CHAT))
+            return;
+
+        //if (!await accessControlService.IsLoggedIn(accountService.CurrentAccount))
+        //{
+        //    navigationManager.NavigateTo("/locked");
+        //    return;
+        //}
+
+
+        if (browserInfo.IsMobile)
+            paperStyle = "height: 80vh; display: flex; flex-direction: column; justify-content: space-between;";
+
+
+        chatNotification.OnChanged += ChatChanged;
+
+        refreshTimer = new Timer(_ => InvokeAsync(async () => await UpdateChat()), null, TimeSpan.Zero, TimeSpan.FromSeconds(ClientConstants.CHAT_MESSAGES_UPDATE_INTERVAL_SECONDS));
+
+        await uiModeNotification.NotifyChanged(UIModes.Chats);
+
+    }
+
+    private string Message = "";
+
+    // checks whether a daily chat block is expired and new one needs to be generated
+    // chat init blocks are generated daily so the messages can gradually deleted after retention period on daily basic,
+    // to keep an overall message history for the retention period
+    private bool IsChatOutExpired(ChatOut? chatOut)
+    {
+        if (chatOut is null)
+            return true;
+
+        if (chatOut.Contact.Account.Network == Networks.devnet)
+            return chatOut.TimeStamp < UnixTimeInterval.FromMinutes(ClientConstants.CHAT_BLOCK_RENEWAL_DEV_MINUES).BeforeNow(); // for dev only
+        else
+            return chatOut.TimeStamp < UnixTimeInterval.FromDays(ClientConstants.CHAT_BLOCK_RENEWAL_DAYS).BeforeNow();
+    }
+
+    bool is_send_working = false;
+
+    private async Task SendMessage()
+    {
+
+        if (string.IsNullOrWhiteSpace(Message))
+        {
+            ShowAlert("Message cannot be empty", Severity.Info);
+            return;
+        }
+        is_send_working = true;
+        try
+        {
+            if (accountService.CurrentAccount.CurrentContact == null)
+            {
+                navigationManager.NavigateTo("/newchat");
+                return;
+            }
+
+            BaseSendResult result;
+
+            if (IsChatOutExpired(accountService.CurrentAccount.CurrentContact.CurrentChatOut))
+            {
+                result = await sendProcessor.SendChatOut(
+                        accountService.CurrentAccount.CurrentContact, Message, MessageTypes.TEXT);
+            }
+            else
+            {
+                result = await sendProcessor.SendMessage(
+                    accountService.CurrentAccount.CurrentContact.CurrentChatOut, Message, MessageTypes.TEXT);
+            }
+
+            if (result.ResultCode == ResultStatusCodes.SUCCESS)
+            {
+                Message = "";
+                await UpdateChat();
+            }
+            else
+               if (result.ResultCode == ResultStatusCodes.LICENSE_VIOLATION)
+            {
+                ShowLicenseDialog();
+            }
+            else
+            {
+                ShowAlert("Could not send message", Severity.Error);
+            }
+        }
+        catch (Exception e)
+        {
+            ShowAlert("Could not send message: " + e.Message, Severity.Error);
+        }
+        finally
+        {
+            is_send_working = false;
+        }
+
+    }
+
+    void ShowAlert(string message, Severity severity)
+    {
+        Snackbar.Configuration.SnackbarVariant = Variant.Outlined;
+        Snackbar.Configuration.MaxDisplayedSnackbars = 5;
+        Snackbar.Add(message, severity);
+    }
+
+    private void ChatChanged(object? sender, EventArgs e)
+    {
+        UpdateChat();
+        StateHasChanged();
+    }
+
+    void IDisposable.Dispose()
+    {
+        refreshTimer?.Dispose();
+        if (chatNotification != null)
+        {
+            chatNotification.OnChanged -= ChatChanged;
+        }
+
+        //CloseAlert();
+    }
+
+
+
+}
+
+
+
+
+

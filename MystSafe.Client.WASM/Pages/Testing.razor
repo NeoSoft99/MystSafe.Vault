@@ -1,0 +1,479 @@
+﻿@page "/testing"
+
+@using MystSafe.Client.Engine
+@using MystSafe.Client.Base
+
+@inject SendProcessor sendProcessor
+@inject AccountService accountService
+@inject ChatsDrawerNotification chatsDrawerNotification
+@inject UIModeNotification uiModeNotification
+@inject ISnackbar Snackbar
+@inject LocalStorageEncryptionService localStorageEncryptor
+
+<PageTitle>Settings</PageTitle>
+
+<h1>Run some tests</h1>
+
+<MudButton Class="ma-4" Disabled="@isWorking" OnClick="RunQuickTest" Variant="Variant.Filled" Color="Color.Default">
+    @if (isWorking)
+    {
+        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+        <MudText Class="ms-2">Testing</MudText>
+    }
+    else
+    {
+        <MudText>Quick Test</MudText>
+    }
+</MudButton>
+
+<MudButton Class="ma-4" Disabled="@isWorking" OnClick="RunStandardTest" Variant="Variant.Filled" Color="Color.Default">
+    @if (isWorking)
+    {
+        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+        <MudText Class="ms-2">Testing</MudText>
+    }
+    else
+    {
+        <MudText>Standard Test</MudText>
+    }
+</MudButton>
+
+
+
+<MudButton Class="ma-4" Disabled="@isWorking" @onclick="(() => RunRestoreFromNetworkTest())" Variant="Variant.Filled" Color="Color.Default">
+    @if (isWorking)
+    {
+        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+        <MudText Class="ms-2">Testing</MudText>
+    }
+    else
+    {
+        <MudText>Restore Test (Network)</MudText>
+    }
+</MudButton>
+
+<MudButton Class="ma-4" Disabled="@isWorking" @onclick="(() => RunRetrieveTest())" Variant="Variant.Filled" Color="Color.Default">
+    @if (isWorking)
+    {
+        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+        <MudText Class="ms-2">Testing</MudText>
+    }
+    else
+    {
+        <MudText>Retrieve Test (Local)</MudText>
+    }
+</MudButton>
+
+<MudButton Class="ma-4" Disabled="@isWorking" OnClick="(() => RunLicenseTest(true))" Variant="Variant.Filled" Color="Color.Default">
+    @if (isWorking)
+    {
+        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+        <MudText Class="ms-2">Testing</MudText>
+    }
+    else
+    {
+        <MudText>License Test</MudText>
+    }
+</MudButton>
+
+<MudButton Class="ma-4" Disabled="@isWorking" OnClick="RunFullTest" Variant="Variant.Filled" Color="Color.Primary">
+    @if (isWorking)
+    {
+        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+        <MudText Class="ms-2">Testing</MudText>
+    }
+    else
+    {
+        <MudText>Full Test</MudText>
+    }
+</MudButton>
+
+<p>
+    @((MarkupString)TestResult)
+</p>
+
+
+
+@code {
+    private bool isWorking = false;
+
+    MarkupString TestResult = (MarkupString)"";
+
+    private async Task RunQuickTest()
+    {
+        isWorking = true;
+        string result = string.Empty;
+        try
+        {
+            ShowAlert("Starting quick test...", Severity.Info);
+
+            if (accountService.CurrentAccount != null)
+            {
+                accountService.CurrentAccount.Clear();
+                accountService.CurrentAccount = null;
+                chatsDrawerNotification.NotifyChanged(true);
+            }
+
+            SelfTest selftest = new SelfTest(sendProcessor);
+            StateHasChanged();
+            accountService.CurrentAccount = await selftest.InitializeQuickTest(accountService.CurrentAccount);
+
+            ShowAlert("Account create passed", Severity.Info);
+
+
+            await selftest.QuickTest();
+
+            result = "Quick test passed";
+            ShowAlert(result, Severity.Success);
+
+            await chatsDrawerNotification.NotifyChanged(true);
+
+        }
+        catch (Exception e)
+        {
+            result = "Quick Test Failed: " + e.ToString();
+            ShowAlert(result, Severity.Error);
+        }
+        finally
+        {
+            isWorking = false;
+        }
+        TestResult = (MarkupString)($"{TestResult.Value}<br>{result}");
+    }
+
+    // restoring from the network (node)
+    private async Task RunRestoreFromNetworkTest(SelfTest? self_test = null)
+    {
+        string result = string.Empty;
+        isWorking = true;
+        try
+        {
+            ShowAlert("Starting Restore test...", Severity.Info);
+
+
+            if (self_test is null)
+                self_test = await RunStandardTest();
+
+            var contacts_count = accountService.CurrentAccount.Contacts.Count;
+            var secret_count = accountService.CurrentAccount.Secrets.Count;
+
+            ShowAlert("Restoring account from the network...", Severity.Info);
+
+            accountService.CurrentAccount = await self_test.RestoreFromNetworkTest(accountService.CurrentAccount);
+
+            ShowAlert("Account has been restored", Severity.Info);
+
+            if (contacts_count != accountService.CurrentAccount.Contacts.Count ||
+               secret_count != accountService.CurrentAccount.Secrets.Count)
+                throw new Exception("Restored account does not match");
+
+            result = "Restore test passed";
+            ShowAlert(result, Severity.Success);
+
+        }
+        catch (Exception e)
+        {
+            result = "Restore Test Failed: " + e.ToString();
+            ShowAlert(result, Severity.Error);
+        }
+        finally
+        {
+            isWorking = false;
+        }
+        TestResult = (MarkupString)($"{TestResult.Value}<br>{result}");
+    }
+
+    // retrieving from the client (IndexDB)
+    private async Task RunRetrieveTest(SelfTest? self_test = null)
+    {
+        string result = string.Empty;
+        isWorking = true;
+        try
+        {
+
+            ShowAlert("Starting Retrieve test...", Severity.Info);
+
+            if (self_test is null)
+                self_test = await RunStandardTest();
+
+
+            var contacts_count = accountService.CurrentAccount.Contacts.Count;
+            var secret_count = accountService.CurrentAccount.Secrets.Count;
+
+
+            localStorageEncryptor.ResetLocalEncryptionKey(accountService.CurrentAccount.Id); //  LocalEncryptionKey = null;
+            accountService.CurrentAccount = null;
+
+            await chatsDrawerNotification.NotifyChanged(true);
+
+            ShowAlert("Retriving account from local DB...", Severity.Info);
+
+            accountService.CurrentAccount = await self_test.RetrieveTest();
+
+            if (contacts_count != accountService.CurrentAccount.Contacts.Count ||
+                secret_count != accountService.CurrentAccount.Secrets.Count)
+                throw new Exception("Retrieved account does not match");
+
+            result = "Retrieve test passed";
+            ShowAlert(result, Severity.Success);
+
+        }
+        catch (Exception e)
+        {
+            result = "Retrieve Test Failed: " + e.ToString();
+            ShowAlert(result, Severity.Error);
+        }
+        finally
+        {
+            isWorking = false;
+        }
+        TestResult = (MarkupString)($"{TestResult.Value}<br>{result}");
+    }
+
+
+    private async Task<SelfTest> RunStandardTest()
+    {
+        string result = string.Empty;
+        try
+        {
+            isWorking = true;
+            ShowAlert("Starting Standard test...", Severity.Info);
+
+            if (accountService.CurrentAccount != null)
+            {
+                accountService.CurrentAccount.Clear();
+                accountService.CurrentAccount = null;
+                chatsDrawerNotification.NotifyChanged(true);
+            }
+
+            SelfTest selftest = new SelfTest(sendProcessor);
+            //StateHasChanged();
+            accountService.CurrentAccount = await selftest.InitializeStandardTest(accountService.CurrentAccount);
+            ShowAlert("Account create passed", Severity.Info);
+
+            await selftest.QuickTest();
+            //ShowAlert("Quick test passed", Severity.Info);
+
+            await selftest.StandardTestStep1();
+            ShowAlert("Standard Test stage 1 passed", Severity.Info);
+
+
+            await selftest.StandardTestStep2();
+            ShowAlert("Standard Test stage 2 passed", Severity.Info);
+
+
+            await selftest.StandardTestStep3();
+            ShowAlert("Standard Test stage 3 passed", Severity.Info);
+
+
+            await selftest.StandardTestStep4();
+            ShowAlert("Standard Test stage 4 passed", Severity.Info);
+
+
+            await selftest.StandardTestStep5();
+            ShowAlert("Standard Test stage 5 passed", Severity.Info);
+
+
+            await selftest.StandardTestStep6();
+            ShowAlert("Standard Test stage 6 passed", Severity.Info);
+
+
+            await selftest.StandardTestStep7();
+            ShowAlert("Standard Test stage 7 passed", Severity.Info);
+
+
+            await selftest.StandardTestStep8();
+            ShowAlert("Standard Test stage 8 passed", Severity.Info);
+
+
+            await selftest.StandardTestStep9();
+            ShowAlert("Standard Test stage 9 passed", Severity.Info);
+
+
+            await selftest.StandardTestStep10();
+            ShowAlert("Standard Test stage 10 passed", Severity.Info);
+
+
+            await selftest.StandardTestStep11();
+            ShowAlert("Standard Test stage 11 passed", Severity.Info);
+
+
+            await selftest.StandardTestStep12();
+            ShowAlert("Standard Test stage 12 passed", Severity.Info);
+
+
+            await selftest.StandardTestStep13();
+            ShowAlert("Standard Test stage 13 passed", Severity.Info);
+
+
+            await selftest.StandardTestStep14();
+            ShowAlert("Standard Test stage 14 passed", Severity.Info);
+
+
+            await selftest.StandardTestStep15();
+            ShowAlert("Standard Test stage 15 passed", Severity.Info);
+
+
+            var secret = await selftest.StandardTestStep16();
+            ShowAlert("Standard Test stage 16 passed", Severity.Info);
+
+
+            await selftest.StandardTestStep17();
+            ShowAlert("Standard Test stage 17 passed", Severity.Info);
+
+
+            await selftest.StandardTestStep18();
+            ShowAlert("Standard Test stage 18 passed", Severity.Info);
+
+            await selftest.StandardTestStep19();
+            ShowAlert("Standard Test stage 19 passed", Severity.Info);
+
+            await selftest.StandardTestStep20();
+            ShowAlert("Standard Test stage 20 passed", Severity.Info);
+
+            await selftest.StandardTestStep21();
+            ShowAlert("Standard Test stage 21 passed", Severity.Info);
+
+            await selftest.StandardTestStep22();
+            ShowAlert("Standard Test stage 22 passed", Severity.Info);
+
+            await selftest.StandardTestStep23();
+            ShowAlert("Standard Test stage 23 passed", Severity.Info);
+
+            await selftest.StandardTestStep24();
+            ShowAlert("Standard Test stage 24 passed", Severity.Info);
+
+            result = "Standard test passed";
+            ShowAlert(result, Severity.Success);
+            TestResult = (MarkupString)($"{TestResult.Value}<br>{result}");
+
+            await chatsDrawerNotification.NotifyChanged(true);
+
+            return selftest;
+
+        }
+        catch (Exception e)
+        {
+            result = "Standard Test Failed: " + e.ToString();
+            ShowAlert(result, Severity.Error);
+            TestResult = (MarkupString)($"{TestResult.Value}<br>{result}");
+            return null;
+        }
+        finally
+        {
+            isWorking = false;
+        }
+
+    }
+
+    // all tests
+    private async Task RunLicenseTest(bool run_independant_test = true)
+    {
+        string result = string.Empty;
+        isWorking = true;
+        try
+        {
+            var selftest = new SelfTest(sendProcessor);
+
+            ShowAlert("Starting License test...", Severity.Info);
+
+            if (run_independant_test)
+                accountService.CurrentAccount = null;
+
+            accountService.CurrentAccount = await selftest.InitializeLicenseTest(accountService.CurrentAccount);
+            ShowAlert("Created License test recipient account...", Severity.Info);
+
+            // await selftest.LicenseTestStep0();
+            // ShowAlert("Lisense Test stage 0 passed", Severity.Info);
+            //
+            // await selftest.LicenseTestStep1();
+            // ShowAlert("Lisense Test stage 1 passed", Severity.Info);
+
+
+            // await selftest.LicenseTestStep2();
+            // ShowAlert("Lisense Test stage 2 passed", Severity.Info);
+
+
+            await selftest.LicenseTestStep3();
+            ShowAlert("Lisense Test stage 3 passed", Severity.Info);
+
+            await selftest.LicenseTestStep4();
+            ShowAlert("Lisense Test stage 4 passed", Severity.Info);
+
+            await selftest.LicenseTestStep5();
+            ShowAlert("Lisense Test stage 5 passed", Severity.Info);
+
+            await selftest.LicenseTestStep6();
+            ShowAlert("Lisense Test stage 6 passed", Severity.Info);
+
+            await selftest.LicenseTestStep7();
+            ShowAlert("Lisense Test stage 7 passed", Severity.Info);
+
+            await selftest.LicenseTestStep8();
+            ShowAlert("Lisense Test stage 8 passed", Severity.Info);
+
+            await selftest.LicenseTestStep9();
+            ShowAlert("Lisense Test stage 9 passed", Severity.Info);
+
+
+            result = "Lisense test passed";
+            ShowAlert(result, Severity.Success);
+            isWorking = false;
+            await chatsDrawerNotification.NotifyChanged(true);
+
+        }
+        catch (Exception e)
+        {
+            isWorking = false;
+            result = "Lisense Test Failed: " + e.ToString();
+            ShowAlert(result, Severity.Error);
+        }
+        TestResult = (MarkupString)($"{TestResult.Value}<br>{result}");
+    }
+
+    // all tests
+    private async Task RunFullTest()
+    {
+        string result = string.Empty;
+        try
+        {
+
+            var self_test = await RunStandardTest(); //
+
+            await RunRestoreFromNetworkTest(self_test);
+
+            await RunRetrieveTest(self_test); //
+
+            await RunLicenseTest(false); // add on top of previous tests
+
+            result = "Full test passed";
+            ShowAlert(result, Severity.Success);
+
+        }
+        catch (Exception e)
+        {
+            isWorking = false;
+            result = "Full test failed: " + e.ToString();
+            ShowAlert(result, Severity.Error);
+        }
+        TestResult = (MarkupString)($"{TestResult.Value}<br>{result}");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!await accountService.PageSelector(PageTypes.TESTING))
+            return;
+        await uiModeNotification.NotifyChanged(UIModes.Settings);
+    }
+
+
+    void ShowAlert(string message, Severity severity)
+    {
+        Snackbar.Configuration.VisibleStateDuration = 2000;
+        Snackbar.Configuration.SnackbarVariant = Variant.Outlined;
+        Snackbar.Configuration.MaxDisplayedSnackbars = 20;
+        Snackbar.Add(message, severity);
+        StateHasChanged();
+    }
+
+}

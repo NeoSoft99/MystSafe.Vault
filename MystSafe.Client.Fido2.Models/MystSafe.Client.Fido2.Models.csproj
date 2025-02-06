@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RootNamespace>Fido2NetLib</RootNamespace>
+    <IsTrimmable>true</IsTrimmable>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <LangVersion>13</LangVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Version>1.1.0</Version>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <Compile Remove="IMetadataService.cs" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="9.0.1" />
+  </ItemGroup>
+</Project>

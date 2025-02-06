@@ -1,0 +1,69 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>13</LangVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>MystSafe Developers</Authors>
+    <Copyright>Copyright (C) 2024 MystSafe</Copyright>
+    <PackageProjectUrl>https://github.com/MystSafe</PackageProjectUrl>
+    <Version>1.3.8</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="Addresses\" />
+    <None Remove="BlockValidators\" />
+    <None Remove="DTO\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="BlockValidators\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MystSafe.Shared.Crypto\MystSafe.Shared.Crypto.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Protobuf Include="DTO\contactblock.proto">
+      <GrpcServices>Server, Client</GrpcServices>
+      <Access>Public</Access>
+      <ProtoCompile>True</ProtoCompile>
+      <CompileOutputs>True</CompileOutputs>
+      <OutputDir>obj\Debug/net8.0/</OutputDir>
+      <Generator>MSBuild:Compile</Generator>
+    </Protobuf>
+    <Protobuf Include="DTO\initblock.proto">
+      <GrpcServices>Server, Client</GrpcServices>
+      <Access>Public</Access>
+      <ProtoCompile>True</ProtoCompile>
+      <CompileOutputs>True</CompileOutputs>
+      <OutputDir>obj/Debug/net7.0/</OutputDir>
+      <Generator>MSBuild:Compile</Generator>
+    </Protobuf>
+    <Protobuf Include="DTO\msgblock.proto">
+      <GrpcServices>Server, Client</GrpcServices>
+      <Access>Public</Access>
+      <ProtoCompile>True</ProtoCompile>
+      <CompileOutputs>True</CompileOutputs>
+      <OutputDir>obj/Debug/net7.0/</OutputDir>
+      <Generator>MSBuild:Compile</Generator>
+    </Protobuf>
+    <Protobuf Include="DTO\secretblock.proto">
+      <GrpcServices>Server, Client</GrpcServices>
+      <Access>Public</Access>
+      <ProtoCompile>True</ProtoCompile>
+      <CompileOutputs>True</CompileOutputs>
+      <OutputDir>obj\Debug/net8.0/</OutputDir>
+      <Generator>MSBuild:Compile</Generator>
+    </Protobuf>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.29.3" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.67.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.69.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.1" />
+  </ItemGroup>
+</Project>

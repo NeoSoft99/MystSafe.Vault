@@ -1,0 +1,64 @@
+﻿@namespace MystSafe.Client.Base.Components
+
+@inject IJSRuntime JSRuntime
+
+<MudButton Class="ma-2" OnClick="OnClick" Variant="@Variant" Color="@ButtonColor" Disabled=!IsEnabled>
+    @if (IsWorking)
+        {
+        <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Success" />
+        <MudText>@WorkingText</MudText>
+        }
+        else
+        {
+        <MudText>@NormalText</MudText>
+        }
+</MudButton>
+
+@code {
+
+        private bool IsEnabled { get { return !Disabled && !IsWorking; } }
+
+        [Parameter]
+        public Color ButtonColor { get; set; } = Color.Primary;
+
+        [Parameter]
+        public bool IsWorking { get; set; } = false;
+
+        [Parameter]
+        public bool Disabled { get; set; } = false;
+
+        [Parameter]
+        public Variant Variant { get; set; } = Variant.Filled;
+
+        [Parameter]
+        public string NormalText { get; set; } = " ";
+
+        [Parameter]
+        public string WorkingText { get; set; } = "Working...";
+
+        [Parameter]
+        public EventCallback OnButtonClick { get; set; }
+
+        private async Task OnClick()
+        {
+            //try
+            //{
+            await OnButtonClick.InvokeAsync();
+            //}
+            //catch { }
+        }
+
+
+        //protected override async Task OnInitializedAsync()
+        //{
+        //    try
+        //    {
+
+        //    }
+        //    catch (Exception e)
+        //    {
+
+        //    }
+
+        //}
+    }

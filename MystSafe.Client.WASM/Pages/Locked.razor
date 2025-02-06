@@ -1,0 +1,116 @@
+﻿@page "/locked"
+@using MystSafe.Client.Base
+@using MystSafe.Client.Base.Components
+
+@inject AccessControlService accessControlService
+@inject AccountService accountService
+@inject NavigationManager navigationManager
+@inject InactivityTimerService inactivityTimerService
+@inject DrawerState drawerState
+@inject MainLayoutNotification mainLayoutNotification
+@inject ClientVersionService versionService
+@inject ISnackbar Snackbar
+
+@*<MudPaper Elevation="0" Style="@paperStyle">*@
+<MudPaper Elevation="0">
+    <MudCard Elevation="0" Class="ma-2">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h5">MystSafe Locked</MudText>
+            </CardHeaderContent>
+            <CardHeaderActions>
+            </CardHeaderActions>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudPaper Elevation="0" Style="display: flex; flex-direction: column;">
+                <MudText Typo="Typo.body1">Unlock to open MystSafe</MudText>
+            </MudPaper>
+        </MudCardContent>
+        <MudCardActions>
+            @*<MudButton Class="ma-4" @onclick="(() => Unlock())" Variant="Variant.Filled" Color="Color.Primary">
+                    Unlock
+                </MudButton>*@
+            <SmartMudButton OnButtonClick="Unlock" NormalText="Unlock" WorkingText="Unlock" IsWorking="is_working" />
+        </MudCardActions>
+    </MudCard>
+
+    <MudToolBar Position="Fixed" Bottom="0">
+        <MudText Typo="Typo.caption">Release Version: @versionService.GetReleaseVersion()</MudText>
+    </MudToolBar>
+
+
+</MudPaper>
+
+
+@code {
+    //private string paperStyle = "height: 93vh; display: flex; flex-direction: column; justify-content: space-between;";
+
+    bool is_working = false;
+
+    void ShowAlert(string message, Severity severity)
+    {
+        Snackbar.Add(message, severity);
+    }
+
+    protected async void Unlock()
+    {
+        is_working = true;
+        try
+        {
+            if (!await accountService.PageSelector(PageTypes.LOCKED))
+                return;
+
+            //if (await accessControlService.IsLoggedIn(accountService.CurrentAccount))
+            
+            if (!accountService.HasActiveAccount)
+            
+            if (await accessControlService.IsLoggedIn(accountService.CurrentAccount.Id, 
+                    accountService.CurrentAccount.LocalAuthnType,
+                    accountService.CurrentAccount.LocalEncryptionKey,
+                    accountService.CurrentAccount.PasskeyCredentials))
+            {
+                var locked_page = inactivityTimerService.LockedPage;
+                drawerState.IsOpen = inactivityTimerService.DrawerisOpen;
+                await mainLayoutNotification.NotifyChanged();
+                if (!string.IsNullOrWhiteSpace(locked_page))
+                    navigationManager.NavigateTo(locked_page);
+                else
+                    navigationManager.NavigateTo("/secret");
+                accessControlService.IsAppLocked = false;
+
+            }
+            else
+            {
+                ShowAlert("You are logged out", Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowAlert("Cannot unlock: " + ex.Message, Severity.Warning);
+            //navigationManager.NavigateTo("/secret");
+            //accessControlService.IsAppLocked = false;
+        }
+        finally
+        {
+            is_working = false;
+            StateHasChanged();
+        }
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        Snackbar.Configuration.SnackbarVariant = Variant.Outlined;
+        Snackbar.Configuration.MaxDisplayedSnackbars = 5;
+
+        is_working = false;
+
+        inactivityTimerService.DrawerisOpen = drawerState.IsOpen;
+        if (drawerState.IsOpen)
+        {
+            drawerState.IsOpen = false;
+            await mainLayoutNotification.NotifyChanged();
+        }
+    }
+
+}

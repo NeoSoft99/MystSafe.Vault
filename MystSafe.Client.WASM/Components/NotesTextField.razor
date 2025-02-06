@@ -1,0 +1,163 @@
+﻿@using MystSafe.Client
+@inject IJSRuntime JSRuntime
+@inject ISnackbar Snackbar
+
+@if (ClipboardCopyEnabled)
+{
+    <MudTextField Class="ml-8 mr-10 mt-4" @bind-Value="TextValue" @ref="TextReference" T="string" Label="@TextLabel" Variant="@_variant" Lines="@_notesLines" OnKeyUp="@HandleKeyPress" ReadOnly="@ReadOnly" HelperText="@HelperText" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.ContentCopy" OnAdornmentClick="@((e) => CopyToClipboard())" />
+}
+else
+{
+    <MudTextField Class="ml-8 mr-10 mt-4" @bind-Value="TextValue" @ref="TextReference" T="string" Label="@TextLabel" Variant="@_variant" Lines="@_notesLines" OnKeyUp="@HandleKeyPress" ReadOnly="@ReadOnly" HelperText="@HelperText" />
+
+}
+
+
+
+@code {
+    private string _text_value = string.Empty;
+    private MudTextField<string> TextReference;
+    private int _notesLines = 2;
+    private bool _readonly = false;
+    private Variant _variant = Variant.Text;
+
+    [Parameter]
+    public bool ClipboardCopyEnabled { get; set; } = false;
+
+    [Parameter]
+    public string HelperText { get; set; } = string.Empty;
+
+    [Parameter]
+    public string TextLabel { get; set; } = "Notes";
+
+    [Parameter]
+    public string TextValue
+    {
+        get { return _text_value; }
+        set
+        {
+            if (value != _text_value)
+            {
+                _text_value = value;
+                var args = new ChangeEventArgs();
+                args.Value = _text_value;
+                OnValueChanged(args);
+                AdjustLines();
+            }
+        }
+    }
+
+
+    [Parameter]
+    public EventCallback<string> TextValueChanged { get; set; }
+
+    private async Task OnValueChanged(ChangeEventArgs e)
+    {
+        try
+        {
+            TextValue = e.Value.ToString();
+            await TextValueChanged.InvokeAsync(TextValue);
+        }
+        catch { }
+    }
+
+    [Parameter]
+    public bool ReadOnly
+    {
+        get { return _readonly; }
+        set
+        {
+            if (value != _readonly)
+            {
+                _readonly = value;
+
+            }
+            if (_readonly)
+                _variant = Variant.Text;
+            else
+                _variant = Variant.Outlined;
+        }
+    }
+
+    [Parameter]
+    public EventCallback<bool> ReadOnlyChanged { get; set; }
+
+
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        await TextReference.BlurAsync();
+        await TextReference.FocusAsync();
+        AdjustLines();
+    }
+
+    private void AdjustLines()
+    {
+        var lines = CountNewLines(_text_value);
+        if (lines >= _notesLines)
+        {
+            _notesLines = lines + 1;
+            StateHasChanged();
+        }
+    }
+
+    public static int CountNewLines(string input)
+    {
+        // Normalize newlines to Unix style for consistent counting
+        var normalizedInput = input.Replace("\r\n", "\n");
+
+        // Count the '\n' characters
+        return normalizedInput.Count(c => c == '\n');
+    }
+
+    public async Task CopyToClipboard()
+    {
+        try
+        {
+            await TextReference.SelectAsync();
+
+            if (string.IsNullOrEmpty(TextValue))
+                return;
+
+            bool isCopied = await JSRuntime.InvokeAsync<bool>("copyTextToClipboard", TextValue.Trim());
+            if (isCopied)
+            {
+                ShowAlert($"{TextLabel} copied to clipboard", Severity.Info);
+            }
+            else
+            {
+                throw new Exception("Clipboard API not available.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowAlert($"Could not copy to clipboard: {ex.Message}", Severity.Error);
+        }
+    }
+
+
+    void ShowAlert(string message, Severity severity)
+    {
+        Snackbar.Configuration.SnackbarVariant = Variant.Outlined;
+        Snackbar.Configuration.MaxDisplayedSnackbars = 5;
+        Snackbar.Add(message, severity);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+
+            if (ReadOnly)
+                _variant = Variant.Text;
+            else
+                _variant = Variant.Outlined;
+        }
+        catch (Exception e)
+        {
+            ShowAlert(string.Format("OnInitializedAsync error: " + e.Message, TextLabel), Severity.Error);
+        }
+
+    }
+
+}

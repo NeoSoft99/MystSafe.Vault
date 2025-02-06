@@ -1,0 +1,54 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "MystSafe.Shared.Common";
+
+package InitBlock;
+
+service InitBlockNodeService {
+  rpc Broadcast(InitBlock) returns (AddInitBlockStatus);
+  rpc Scan(ChatScanParams) returns (ScanChatResult);
+}
+
+message AddInitBlockStatus {
+  int32 status = 1;
+  string message = 2;
+}
+
+message ChatScanParams {
+    int64 last_scanned_date_time = 1;
+    string scan_key = 2;
+}
+
+message Hash {
+    string value = 1;
+}
+
+message ScanChatResult {
+  int32 status = 1;
+  string message = 2;
+  InitBlock block = 3;
+  bool is_self = 4; 
+}
+
+message InitBlock {
+  string hash = 1;
+  int64 time_stamp = 2;
+  int32 height = 3;
+  string chat_pubkey = 4;
+  int32 chat_expiration_days = 5;
+  string recipient_stealth_address = 6;
+  string sender_stealth_address = 7;
+  string init_data = 8;
+  string message_data = 9;
+  int32 version = 10;
+  int32 network = 11;
+  string prev_hash = 12;
+  int32 difficulty = 13;
+  int32 nonce = 14;
+  bool delete_flag = 15;
+  string signature = 16;
+  string license = 17;
+  int32 license_type = 18;
+  string reserved = 19;
+}
+

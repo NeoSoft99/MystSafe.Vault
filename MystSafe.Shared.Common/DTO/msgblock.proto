@@ -1,0 +1,46 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "MystSafe.Shared.Common";
+
+package MsgBlock;
+
+service MsgBlockNodeService {
+  rpc Broadcast(MsgBlock) returns (AddMsgBlockStatus);
+  rpc Scan(ScanMsgParams) returns (ScanMsgResult);
+}
+
+message AddMsgBlockStatus {
+  int32 status = 1;
+  string message = 2;
+}
+
+message ScanMsgParams {
+    int32 last_scanned_height = 1;
+    string chat_pub_key = 2;
+}
+
+message ScanMsgResult {
+  int32 status = 1;
+  string message = 2;
+  MsgBlock block = 3;
+  bool has_more = 4; 
+}
+
+message MsgBlock {
+  string hash = 1;
+  int64 time_stamp = 2;
+  int32 height = 3;
+  string chat_pub_key = 4;
+  string message_data = 5;
+  int32 version = 6;
+  int32 network = 7;
+  string prev_hash = 8;
+  int32 difficulty = 9;
+  int32 nonce = 10;
+  bool delete_flag = 11; // delete the previous message with hash specified in deletion_hash
+  int32 expiration = 12; // time interval in seconds from time_stamp - when the block needs to be deleted by nodes and by clients 
+  string deletion_hash = 13; // double function: 1) for self-expiring message - hash without message data; 2) for delete message (delete_flag = true) - hash of the message that needs to be deleted 
+  string expired_sig = 14; // for self-expiring message - signature of hash without message data
+  string signature = 15;
+  string reserved = 16;
+}

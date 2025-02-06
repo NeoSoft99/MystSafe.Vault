@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>13</LangVersion>
+    <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Title>MystSafe.Client.Engine</Title>
+    <Authors>MystSafe developers</Authors>
+    <Copyright>MystSafe</Copyright>
+    <Version>1.1.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DotNetEnv" Version="3.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="DB\" />
+    <None Remove="Containers\" />
+    <None Remove="BlockCodecs\" />
+    <None Remove="Services\" />
+    <None Remove="BlockData\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="BlockCodecs\" />
+    <Folder Include="Services\" />
+    <Folder Include="BlockData\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MystSafe.Client.Base\MystSafe.Client.Base.csproj" />
+    <ProjectReference Include="..\MystSafe.Client.CryptoLicense\MystSafe.Client.CryptoLicense.csproj" />
+    <ProjectReference Include="..\MystSafe.Shared.CryptoLicense\MystSafe.Shared.CryptoLicense.csproj" />
+  </ItemGroup>
+</Project>

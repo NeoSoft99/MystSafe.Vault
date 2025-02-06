@@ -1,0 +1,212 @@
+﻿
+@page "/folder"
+@using MystSafe.Client.Engine
+@using MystSafe.Shared.Common
+@using MystSafe.Client.Base.Components
+
+@inject SendProcessor sendProcessor
+@inject NavigationManager navigationManager
+@inject AccountService accountService
+@implements IDisposable
+@inject SecretNotification secretNotification
+@inject UIModeNotification uiModeNotification
+@inject SecretsDrawerNotification secretDrawerNotification
+@inject ISnackbar Snackbar
+
+<MudCard Elevation="0" Class="ma-2">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudToolBar Position="Fixed" Top="0">
+                <MudIcon Class="mr-2" Icon="@Icons.Material.Filled.Folder" Color="Color.Default" />
+                <MudText Typo="Typo.body1">@FolderName</MudText>
+                <MudSpacer />
+                <SmartMudIconButton OnButtonClick="@((e) => NewSecret())" ButtonIcon="@Icons.Material.Filled.Add" ButtonSize="Size.Medium" TooltipText="New Secret" />
+                <MudMenu Icon="@Icons.Material.Filled.MoreVert">
+                    <MudMenuItem OnClick="EditFolder" OnTouch="EditFolder">
+                        <MudIcon Class="mr-2" Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" />
+                        Edit Folder
+                    </MudMenuItem>
+                    <MudMenuItem OnClick="ShowDeleteDialog" OnTouch="ShowDeleteDialog">
+                        <MudIcon Class="mr-2" Icon="@Icons.Material.Filled.Delete" Color="Color.Primary" />
+                        Delete Folder
+                    </MudMenuItem>
+                </MudMenu>
+            </MudToolBar>
+        </CardHeaderContent>
+        <CardHeaderActions>
+            @*<MudIconButton Class="ma-2" Icon="@Icons.Material.Filled.Add" Color="Color.Primary" OnClick="NewSecret" />*@
+            @*<SmartMudIconButton OnButtonClick="@((e) => NewSecret())" ButtonIcon="@Icons.Material.Filled.Add" ButtonSize="Size.Medium" TooltipText="New Secret" />*@
+
+            @*<MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" OnClick="EditFolder" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Primary" OnClick="ShowDeleteDialog" />*@
+            @*<MudMenu Class="ma-2" Icon="@Icons.Material.Filled.MoreVert">
+                <MudMenuItem OnClick="EditFolder" OnTouch="EditFolder">
+                    <MudIcon Class="mr-2" Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" />
+                    Edit Folder
+                </MudMenuItem>
+                <MudMenuItem OnClick="ShowDeleteDialog" OnTouch="ShowDeleteDialog">
+                    <MudIcon Class="mr-2" Icon="@Icons.Material.Filled.Delete" Color="Color.Primary" />
+                    Delete Folder
+                </MudMenuItem>
+            </MudMenu>*@
+
+        </CardHeaderActions>
+    </MudCardHeader>
+    <MudCardContent>
+        <MudPaper Elevation="0" Style="display: flex; flex-direction: column;">
+
+
+        </MudPaper>
+    </MudCardContent>
+</MudCard>
+
+<MudDialog @bind-Visible="show_delete_dialog" Options="dialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Delete" Class="mr-3" />@FolderName
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Typo="Typo.body1">
+            <p>You are about to delete this folder.</p>
+            <p>Note that it will delete it from the network</p>
+            <p>and your other devices.</p>
+        </MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Class="ma-4" OnClick="DeleteFolder" Variant="Variant.Filled" Color="Color.Primary">Delete</MudButton>
+        <MudButton Class="ma-4" OnClick="CloseDeleteDialog" Variant="Variant.Filled" Color="Color.Inherit">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+
+@code {
+
+    bool show_alert = false;
+    string alertMessage = "";
+
+    bool show_delete_dialog = false;
+
+    private string FolderName = "";
+
+    private void CloseDeleteDialog() => show_delete_dialog = false;
+
+    private DialogOptions dialogOptions = new() { FullWidth = true };
+
+    private async Task NewSecret()
+    {
+        if (accountService.HasActiveAccount)
+        {
+            navigationManager.NavigateTo(PageUrls.NEW_SECRET);
+        }
+    }
+
+    async Task EditFolder()
+    {
+        accountService.CurrentAccount.SecretEditMode = true;
+        navigationManager.NavigateTo(PageUrls.NEW_FOLDER);
+    }
+
+    async Task DeleteFolder()
+    {
+        CloseDeleteDialog();
+
+        try
+        {
+
+            var delete_result = await sendProcessor.DeleteSecret(accountService.CurrentAccount.CurrentSecret);
+
+            if (delete_result.ResultCode == ResultStatusCodes.SUCCESS)
+            {
+                ShowAlert("The folder has been deleted", Severity.Success);
+
+                await secretDrawerNotification.NotifyChanged();
+                navigationManager.NavigateTo(PageUrls.NEW_SECRET);
+            }
+            else
+            {
+                ShowAlert("Could not delete this folder", Severity.Error);
+            }
+        }
+        catch (Exception e)
+        {
+            ShowAlert("Could not delete this folder" + e.Message, Severity.Error);
+        }
+
+    }
+
+
+    void ShowDeleteDialog()
+    {
+        if (accountService.CurrentAccount == null ||
+            accountService.CurrentAccount.CurrentSecret == null ||
+            accountService.CurrentAccount.CurrentSecret.Data.SecretType != SecretTypes.Folder)
+        {
+            navigationManager.NavigateTo(PageUrls.NEW_SECRET);
+            return;
+        }
+        show_delete_dialog = true;
+        //StateHasChanged();
+    }
+
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        try
+        {
+            //if (!await accessControlService.IsLoggedIn(accountService.CurrentAccount))
+            //{
+            //    navigationManager.NavigateTo("/locked");
+            //    return;
+            //}
+
+            if (!await accountService.PageSelector(PageTypes.FOLDER))
+                return;
+
+            secretNotification.OnChanged += SecretChanged;
+
+            Snackbar.Configuration.SnackbarVariant = Variant.Outlined;
+            Snackbar.Configuration.MaxDisplayedSnackbars = 5;
+
+            FolderName = accountService.CurrentAccount.CurrentSecret.Data.Title;
+            await uiModeNotification.NotifyChanged(UIModes.Secrets);
+        }
+        catch (Exception e)
+        {
+            ShowAlert(e.Message, Severity.Warning);
+        }
+
+    }
+
+
+    private void SecretChanged(object? sender, EventArgs e)
+    {
+        FolderName = accountService.CurrentAccount.CurrentSecret.Data.Title;
+        StateHasChanged();
+    }
+
+    void ShowAlert(string message, Severity severity)
+    {
+        Snackbar.Add(message, severity);
+    }
+
+    void IDisposable.Dispose()
+    {
+        try
+        {
+            if (secretNotification != null)
+            {
+                secretNotification.OnChanged -= SecretChanged;
+            }
+        }
+        catch
+        {
+
+        }
+    }
+}
+
+

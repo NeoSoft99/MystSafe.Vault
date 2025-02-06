@@ -1,0 +1,369 @@
+﻿@inherits LayoutComponentBase
+@using MystSafe.Client.App.Components
+@using MystSafe.Client.Engine
+@using MystSafe.Client.Base
+@using MystSafe.Client.Base.Components
+@inject NavigationManager navigationManager
+@inject AccountService accountService
+
+@inject IJSRuntime JSRuntime
+@inject MainLayoutNotification mainLayoutNotification
+@inject BrowserInfoService browserInfo
+@implements IDisposable
+@inject UIModeNotification uiModeNotification
+@inject DrawerState drawerState
+
+@inject SendProcessor sendProcessor
+
+@inject AccessControlService accessControlService
+@inject InactivityTimerService inactivityTimerService
+
+<MudThemeProvider>
+</MudThemeProvider>
+
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudPopoverProvider />
+
+<MudLayout >
+    <MudAppBar Elevation="1" Dense="false" Style="@($"background:{Theme.PaletteLight};")">
+        <MudTooltip ShowOnClick=false ShowOnHover="@(!browserInfo.IsMobile)" Text="@DrawerToggleButtonCaption" Placement="Placement.Right">
+            <MudIconButton Icon="@Icons.Material.Filled.List" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => ToggleDrawer())" Disabled=!TOGGLE_BUTTON_ENABLED />
+        </MudTooltip>
+        <MudText Typo="Typo.h6" Class="ml-3">@CAPTION</MudText>
+        <MudSpacer />
+
+        <SmartMudIconButton ButtonSize="Size.Medium" ButtonIcon="@Icons.Material.Filled.Security" ButtonColor="Color.Inherit" Edge="Edge.End" OnButtonClick="@((e) => Secret())" Disabled=!SECRETS_BUTTON_ENABLED TooltipText="Secrets" />
+
+
+        <SmartMudIconButton ButtonSize="Size.Medium" ButtonIcon="@Icons.Material.Filled.ChatBubble" ButtonColor="Color.Inherit" Edge="Edge.End" OnButtonClick="@((e) => Chat())" Disabled=!CHATS_BUTTON_ENABLED TooltipText="Chats" />
+
+        <SmartMudIconButton ButtonSize="Size.Medium" ButtonIcon="@Icons.Material.Filled.AccountCircle" ButtonColor="Color.Inherit" Edge="Edge.End" OnButtonClick="@((e) => ManageAccount())" Disabled=!ACCOUNT_BUTTON_ENABLED TooltipText="Account" IsWorking=is_account_working />
+
+        <SmartMudIconButton ButtonSize="Size.Medium" ButtonIcon="@Icons.Material.Filled.Info" ButtonColor="Color.Inherit" Edge="Edge.End" OnButtonClick="@((e) => Info())" TooltipText="About MystSafe" IsWorking=is_about_working />
+
+        @if (SETTINGS_BUTTON_ENABLED)
+        {
+            <MudTooltip ShowOnClick=false ShowOnHover="@(!browserInfo.IsMobile)" Text="Testing">
+                <MudIconButton Icon="@Icons.Material.Filled.Check" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => Testing())" />
+            </MudTooltip>
+        }
+
+        @*
+        @if (LICENSE_BUTTON_ENABLED)
+        {
+            <MudTooltip ShowOnClick=false ShowOnHover="@(!browserInfo.IsMobile)" Text="License">
+                <MudIconButton Icon="@Icons.Material.Filled.Money" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => License())" />
+            </MudTooltip>
+            <MudTooltip ShowOnClick=false ShowOnHover="@(!browserInfo.IsMobile)" Text="Stats">
+                <MudIconButton Icon="@Icons.Material.Filled.Numbers" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => Stats())" />
+            </MudTooltip>
+        }
+
+        @if (MASTER_KEYS_BUTTON_ENABLED)
+        {
+            <MudTooltip ShowOnClick=false ShowOnHover="@(!browserInfo.IsMobile)" Text="Master Key">
+                <MudIconButton Icon="@Icons.Material.Filled.Key" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => MasterKey())" />
+            </MudTooltip>
+        }
+        *@
+
+
+    </MudAppBar>
+    <!--    <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
+            <NavMenu />
+        </MudDrawer> -->
+    <MudDrawer Width="@(browserInfo.IsMobile ? "100%" : "25%")" @bind-Open="drawerState.IsOpen" ClipMode="DrawerClipMode.Always" Elevation="1" Variant="@DrawerVariant.Persistent">
+        @if (uiModeNotification.UIMode == UIModes.Chats)
+        {
+            <ChatsDrawer>
+
+            </ChatsDrawer>
+        }
+        @if (uiModeNotification.UIMode == UIModes.Secrets)
+        {
+            <SecretsDrawer>
+
+            </SecretsDrawer>
+        }
+    </MudDrawer>
+
+    <MudMainContent>
+        @Body
+    </MudMainContent>
+</MudLayout>
+<UpdateAvailableDetector />
+
+@code {
+
+    private MudTheme Theme = new MudTheme();
+    // this is definied by user clicking the drawer button and wheteher it is desktop or mobile
+    //private bool IsDrawerOpen = true;
+
+    // this is to show account and settings screens in full screen
+    //private bool CanDrawerBeOpen = true;
+
+    //private bool OpenDrawer = true;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+
+        mainLayoutNotification.OnChanged += MainLayoutChanged;
+        uiModeNotification.OnChanged += UIModeChanged;
+        inactivityTimerService.OnInactivityTimer += OnInactivityTimer;
+
+        try
+        {
+            runtime_environment = await JSRuntime.InvokeAsync<string>("eval", "window.MyApp.environment.runtime_environment");
+        }
+        catch { }
+
+        try
+        {
+            await inactivityTimerService.StartTimer();
+            //var dotNetReference = DotNetObjectReference.Create(this);
+            //await JSRuntime.InvokeVoidAsync("activityDetector.startTimer", dotNetReference, 10);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+
+        await accountService.PageSelector(PageTypes.MAIN_LAYOUT);
+
+
+    }
+
+    private void OnInactivityTimer(object? sender, EventArgs e)
+    {
+        // there is no point to lock when there is no active account
+        if (accountService.CurrentAccount is null)
+            return;
+
+        //accessControlService.Logout(accountService.CurrentAccount);
+        accessControlService.Logout(accountService.CurrentAccount.Id, accountService.CurrentAccount.LocalAuthnType);
+        navigationManager.NavigateTo("/locked");
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            //IsMobile = await JSRuntime.InvokeAsync<bool>("window.isMobile");
+            browserInfo.IsMobile = await JSRuntime.InvokeAsync<bool>("window.isMobile");
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleDrawer()
+    {
+        //IsDrawerOpen = !IsDrawerOpen;
+        drawerState.IsOpen = !drawerState.IsOpen;
+        //StateHasChanged();
+    }
+
+    bool is_account_working = false;
+
+    private async Task ManageAccount()
+    {
+        //is_account_working = true;
+        ACCOUNT_BUTTON_ENABLED = false;
+        StateHasChanged();
+        try
+        {
+            await Task.Run(() =>
+            {
+                navigationManager.NavigateTo(PageUrls.MANAGE_ACCOUNT);
+            }
+            );
+            //navigationManager.NavigateTo("/manageaccount");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            ACCOUNT_BUTTON_ENABLED = true;
+        }
+        finally
+        {
+            //is_account_working = false;
+            StateHasChanged();
+        }
+    }
+
+    private void Secret()
+    {
+        if (AccountExists())
+        {
+            accountService.CurrentAccount.SecretEditMode = false;
+            navigationManager.NavigateTo("/secret");
+        }
+    }
+
+    private void Chat()
+    {
+        if (AccountExists())
+        {
+            //if (browserInfo.IsMobile && IsDrawerOpen)
+            //    IsDrawerOpen = false;
+            navigationManager.NavigateTo("/chat");
+        }
+    }
+
+    private bool AccountExists()
+    {
+        if (accountService.CurrentAccount == null)
+        {
+            navigationManager.NavigateTo(PageUrls.CREATE_ACCOUNT);
+            return false;
+        }
+        else
+            return true;
+    }
+
+    private void Testing()
+    {
+        navigationManager.NavigateTo(PageUrls.TESTING);
+    }
+
+    private void License()
+    {
+        navigationManager.NavigateTo(PageUrls.LICENSE);
+    }
+
+    private void Stats()
+    {
+        navigationManager.NavigateTo(PageUrls.STATS);
+    }
+
+    private void MasterKey()
+    {
+        navigationManager.NavigateTo(PageUrls.MASTER_KEY);
+    }
+
+    bool is_about_working = false;
+
+    private void Info()
+    {
+        is_about_working = true;
+        StateHasChanged();
+        try
+        {
+            navigationManager.NavigateTo(PageUrls.WEBSITE);
+        }
+        finally
+        {
+            is_about_working = false;
+            StateHasChanged();
+        }
+    }
+
+    string runtime_environment = "debug";
+
+
+    void IDisposable.Dispose()
+    {
+        try
+        {
+            mainLayoutNotification.OnChanged -= MainLayoutChanged;
+            uiModeNotification.OnChanged -= UIModeChanged;
+            inactivityTimerService.OnInactivityTimer -= OnInactivityTimer;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+    }
+
+    // this event signal that the drawer needs to be closed (for mobile devices only)
+    private void MainLayoutChanged(object sender, EventArgs e)
+    {
+        if (browserInfo.IsMobile && drawerState.IsOpen)
+        {
+            drawerState.IsOpen = false;
+        }
+        StateHasChanged();
+    }
+
+    bool ACCOUNT_BUTTON_ENABLED = true;
+    bool CHATS_BUTTON_ENABLED = true;
+    bool SECRETS_BUTTON_ENABLED = true;
+    bool SETTINGS_BUTTON_ENABLED = false;
+    bool TOGGLE_BUTTON_ENABLED = true;
+    bool LICENSE_BUTTON_ENABLED = false;
+    bool MASTER_KEYS_BUTTON_ENABLED = false;
+
+    string DrawerToggleButtonCaption = string.Empty;
+
+    string CAPTION = string.Empty;
+
+
+
+    private void UIModeChanged(object sender, EventArgs e)
+    {
+        ACCOUNT_BUTTON_ENABLED = true;
+        CHATS_BUTTON_ENABLED = true;
+        SECRETS_BUTTON_ENABLED = true;
+        TOGGLE_BUTTON_ENABLED = false;
+
+        SETTINGS_BUTTON_ENABLED = accountService.CanAccessAdminPage(PageTypes.TESTING);
+        LICENSE_BUTTON_ENABLED = accountService.CanAccessAdminPage(PageTypes.LICENSE);
+        MASTER_KEYS_BUTTON_ENABLED = accountService.CanAccessAdminPage(PageTypes.MASTER_KEY);
+
+        DrawerToggleButtonCaption = "";
+
+        switch (uiModeNotification.UIMode)
+        {
+            case UIModes.Account:
+                ACCOUNT_BUTTON_ENABLED = false;
+                CAPTION = "Account";
+                drawerState.IsOpen = false;
+                break;
+            case UIModes.Secrets:
+                SECRETS_BUTTON_ENABLED = false;
+                CAPTION = "Secrets";
+                drawerState.IsOpen = true;
+                DrawerToggleButtonCaption = "Show/hide secret list";
+                TOGGLE_BUTTON_ENABLED = true;
+                break;
+            case UIModes.Chats:
+                CHATS_BUTTON_ENABLED = false;
+                CAPTION = "Chats";
+                drawerState.IsOpen = true;
+                DrawerToggleButtonCaption = "Show/hide chat list";
+                TOGGLE_BUTTON_ENABLED = true;
+                break;
+            case UIModes.Settings:
+                CAPTION = "Testing";
+                drawerState.IsOpen = false;
+                break;
+            case UIModes.InstantShare:
+                CAPTION = "Instant Share";
+                drawerState.IsOpen = false;
+                break;
+            case UIModes.License:
+                //LICENSE_BUTTON_ENABLED = false;
+                CAPTION = "License";
+                drawerState.IsOpen = false;
+                break;
+            case UIModes.MasterKey:
+                //LICENSE_BUTTON_ENABLED = false;
+                CAPTION = "Master Key";
+                drawerState.IsOpen = false;
+                break;
+            case UIModes.Stats:
+                CAPTION = "Stats";
+                drawerState.IsOpen = false;
+                break;
+        }
+        //if (browserInfo.IsMobile)
+        //    drawerState.IsOpen = false;
+
+        StateHasChanged();
+    }
+
+    }
+
+

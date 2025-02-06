@@ -1,0 +1,116 @@
+﻿@page "/newchat"
+@using MystSafe.Client.Engine
+@using MystSafe.Shared.Common
+@using MystSafe.Client.Base.Components
+
+@inject SendProcessor sendProcessor
+@inject NavigationManager navigationManager
+@inject AccountService accountService
+@inject ChatsDrawerNotification chatsDrawerNotification
+@inject UIModeNotification uiModeNotification
+@inject ISnackbar Snackbar
+
+<MudCard Elevation="0" Class="ma-2">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">New Chat Request</MudText>
+        </CardHeaderContent>
+        <CardHeaderActions>
+        </CardHeaderActions>
+    </MudCardHeader>
+    <MudCardContent>
+        <MudPaper Elevation="0" Style="display: flex; flex-direction: column;">
+
+            <MudToolBar Class="ma-4">
+                <MudTextField @bind-Value="RecipientAddress " T="string" Label="Send To" Variant="Variant.Outlined" HelperText="Address of the person you want to chat with" />
+            </MudToolBar>
+            @*<MudToolBar Class="ma-4">
+                    <MudTextField @bind-Value="Message" T="string" Label="Message" Variant="Variant.Outlined" HelperText="Message to send" />
+                </MudToolBar>*@
+
+        </MudPaper>
+    </MudCardContent>
+    <MudCardActions>
+        @*<MudButton Class="ma-4" @onclick="SendNewChat" Variant="Variant.Filled" Color="Color.Primary">Send Chat Request</MudButton>*@
+        <SmartMudButton NormalText="Send Chat Request" WorkingText="Sending..." OnButtonClick="SendNewChat" IsWorking="is_working"></SmartMudButton>
+
+    </MudCardActions>
+</MudCard>
+
+@code {
+
+    //bool showAlert = false;
+    //string alertMessage = "";
+
+
+    private string RecipientAddress = "";
+    //private string Message = "";
+    bool is_working = false;
+
+    private async Task SendNewChat()
+    {
+
+        is_working = true;
+        try
+        {
+            if (string.IsNullOrWhiteSpace(RecipientAddress))
+            {
+                ShowAlert("Please specify correct recipient address", Severity.Warning);
+                return;
+            }
+
+            if (RecipientAddress == accountService.CurrentAccount.CurrentAddress.ToString())
+            {
+                ShowAlert("Sending to the same address is not supported", Severity.Warning);
+                return;
+            }
+
+            var result = await sendProcessor.NewContactRequest(
+            accountService.CurrentAccount,
+            RecipientAddress);
+
+            if (result.ResultCode == ResultStatusCodes.SUCCESS)
+            {
+                accountService.CurrentAccount.CurrentContactId = result.NewContact.Id;
+                navigationManager.NavigateTo("/chat");
+                await chatsDrawerNotification.NotifyChanged(false);
+            }
+            else
+            {
+                ShowAlert("Could not initiate chat: " + result.ResultMessage, Severity.Error);
+            }
+        }
+        catch (Exception e)
+        {
+            ShowAlert("Could not initiate chat: " + e.Message, Severity.Error);
+        }
+        finally
+        {
+            is_working = false;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        //if (!await accessControlService.IsLoggedIn(accountService.CurrentAccount))
+        //{
+        //    navigationManager.NavigateTo("/locked");
+        //    return;
+        //}
+
+        if (!await accountService.PageSelector(PageTypes.NEW_CHAT))
+            return;
+        await uiModeNotification.NotifyChanged(UIModes.Chats);
+
+    }
+
+
+    void ShowAlert(string message, Severity severity)
+    {
+        Snackbar.Configuration.SnackbarVariant = Variant.Outlined;
+        Snackbar.Configuration.MaxDisplayedSnackbars = 5;
+        Snackbar.Add(message, severity);
+    }
+
+}
+

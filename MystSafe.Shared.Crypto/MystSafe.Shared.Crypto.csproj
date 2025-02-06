@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Title>MystSafe cryptographic library</Title>
+        <Authors>MystSafe Developers</Authors>
+        <Description>MystSafe cryptographic library contains methods to generate and validate keys, addresses, and signatures</Description>
+        <Copyright>Copyright (C) 2024 MystSafe</Copyright>
+        <PackageProjectUrl>https://github.com/MystSafe</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/MystSafe/MystSafe</RepositoryUrl>
+        <Version>1.3.12</Version>
+        <LangVersion>13</LangVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="BouncyCastle.Cryptography" Version="2.5.0" />
+      <PackageReference Include="Microsoft.AspNetCore.DataProtection.Extensions" Version="9.0.1" />
+      <PackageReference Include="MoneroRing.Crypto" Version="1.3.0" />
+      <PackageReference Include="NBitcoin" Version="7.0.50" />
+    </ItemGroup>
+
+</Project>

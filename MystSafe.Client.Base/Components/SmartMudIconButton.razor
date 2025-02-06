@@ -1,0 +1,65 @@
+﻿@namespace MystSafe.Client.Base.Components
+@inject IJSRuntime JSRuntime
+@inject BrowserInfoService browserInfo
+
+<MudTooltip ShowOnClick=false ShowOnHover="@(!browserInfo.IsMobile)" Text="@TooltipText" >
+    <MudIconButton Icon="@ButtonIcon" Size="@ButtonSize" Color="@ButtonColor" OnClick="OnClick" Disabled=!IsEnabled Edge="@Edge" />
+</MudTooltip>
+
+@code {
+
+    [Parameter]
+    public Edge Edge { get; set; } = Edge.End;
+
+    //[Parameter]
+    //public string HtmlTag { get; set; } = " ";
+
+    //[Parameter]
+    //public string ButtonFor { get; set; } = " ";
+
+    [Parameter]
+    public Color ButtonColor { get; set; } = Color.Primary;
+
+    [Parameter]
+    public string ButtonIcon { get; set; } = " ";
+
+    [Parameter]
+    public Size ButtonSize { get; set; } = Size.Small;
+
+    bool IsEnabled { get { return !Disabled && !IsWorking;  } }
+
+    [Parameter]
+    public bool IsWorking { get; set; } = false;
+
+    [Parameter]
+    public bool Disabled { get; set; } = false;
+
+    [Parameter]
+    public string TooltipText { get; set; } = " ";
+
+    [Parameter]
+    public EventCallback OnButtonClick { get; set; }
+
+    private async Task OnClick()
+    {
+        //try
+        //{
+        await OnButtonClick.InvokeAsync();
+        //}
+        //catch { }
+    }
+
+
+    //protected override async Task OnInitializedAsync()
+    //{
+    //    try
+    //    {
+
+    //    }
+    //    catch (Exception e)
+    //    {
+
+    //    }
+
+    //}
+}
