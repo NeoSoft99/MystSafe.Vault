@@ -25,6 +25,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MystSafe.Shared.Common", "MystSafe.Shared.Common\MystSafe.Shared.Common.csproj", "{7B8C85E0-0DED-4D27-99EC-7B55B317FD6A}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared", "Shared", "{E443A4E4-5B9C-4BB4-AE32-5D057862BDE9}"
+	ProjectSection(SolutionItems) = preProject
+		LICENSE = LICENSE
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MystSafe.Shared.CryptoLicense", "MystSafe.Shared.CryptoLicense\MystSafe.Shared.CryptoLicense.csproj", "{A26CADCD-9CC2-4B81-A5FE-5760B7B1F7C4}"
 EndProject
