@@ -21,11 +21,12 @@ COPY ["MystSafe.Client.CryptoLicense/MystSafe.Client.CryptoLicense.csproj", "Mys
 COPY ["MystSafe.Shared.CryptoLicense/MystSafe.Shared.CryptoLicense.csproj", "MystSafe.Shared.CryptoLicense/"]
 COPY ["MystSafe.Shared.Crypto/MystSafe.Shared.Crypto.csproj", "MystSafe.Shared.Crypto/"]
 COPY ["MystSafe.Shared.Common/MystSafe.Shared.Common.csproj", "MystSafe.Shared.Common/"]
+
 RUN dotnet restore "MystSafe.Client.WASM/MystSafe.Client.App.csproj"
 
 COPY . .
 WORKDIR "/src/MystSafe.Client.WASM"
-RUN dotnet build "MystSafe.Client.App.csproj" -c $BUILD_CONFIGURATION -o /app/build /p:GeneratePackageOnBuild=false
+RUN dotnet build "MystSafe.Client.App.csproj" -c $BUILD_CONFIGURATION -o /app/build /p:GeneratePackageOnBuild=false --no-restore /maxcpucount
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "MystSafe.Client.App.csproj" -c $BUILD_CONFIGURATION /p:PublishTrimmed=false -o /app/publish /p:UseAppHost=false /p:GeneratePackageOnBuild=false
