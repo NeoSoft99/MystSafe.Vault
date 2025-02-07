@@ -212,8 +212,6 @@ public class SendProcessor
         }
         catch (Exception e)
         {
-            Console.WriteLine("Exception in GetRecentAccountAsync: " + e.Message);
-            //Logger.LogError(e, e.Message);
             Console.WriteLine("Exception in GetRecentAccountAsync: " + e.ToString());
             result.ResultCode = ResultStatusCodes.EXCEPTION;
             result.ResultMessage = e.Message;
@@ -1436,9 +1434,9 @@ public class SendProcessor
     public async Task<bool> LookForSecrets(Account account)
     {
         // *** debug - remove afterwards:
-        var HiddenScanKey = string.Empty;
-        var PubKey = string.Empty;
-        var block_salt = string.Empty;
+        // var HiddenScanKey = string.Empty;
+        // var PubKey = string.Empty;
+        // var block_salt = string.Empty;
         // ***
         var result = false;
         List<SecretBlock> blocks = new List<SecretBlock>();
@@ -1459,9 +1457,9 @@ public class SendProcessor
                     {
                         var decoder = new SecretBlockValidator(block);
                         // *** debug - remove afterwards:
-                        HiddenScanKey = account.CurrentAddress.HiddenScanKey.ToString();
-                        PubKey = block.PubKey;
-                        block_salt = decoder.CalculateBlockSalt();
+                        //HiddenScanKey = account.CurrentAddress.HiddenScanKey.ToString();
+                        //PubKey = block.PubKey;
+                        //block_salt = decoder.CalculateBlockSalt();
                         // ***
                         
                         var stealth_address = StealthAddress.Restore(
@@ -1496,7 +1494,8 @@ public class SendProcessor
         catch (Exception e)
         {
             throw new Exception(
-                $"Scan for secrets failed: {e} HiddenScanKey: {HiddenScanKey} PubKey: {PubKey} block_salt: {block_salt}");
+                //$"Scan for secrets failed: {e} HiddenScanKey: {HiddenScanKey} PubKey: {PubKey} block_salt: {block_salt}");
+                $"Scan for secrets failed: {e}");
             
         }
 

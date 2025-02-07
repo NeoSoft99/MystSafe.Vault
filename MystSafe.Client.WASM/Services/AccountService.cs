@@ -85,27 +85,17 @@ public class AccountService
     }
     */
 
-    public bool CanAccessAdminPage(PageTypes page)
+    
+    public bool CanAccessTestingPage()
     {
-        var dev_domain = _SendProcessor.BackEndURL.Contains("localhost") ||
-                         _SendProcessor.BackEndURL.Contains("dev.mystsafe.com") ||
-                         _SendProcessor.BackEndURL.Contains("test.mystsafe.com");
-        if (dev_domain)
-            return true;
+        var prod_domain = _SendProcessor.BackEndURL.Contains("app.mystsafe.com");
 
-        if (!HasActiveAccount)
-        {
+        if (prod_domain)
             return false;
-        }
 
-        if (page == PageTypes.TESTING || page == PageTypes.MASTER_KEY)
-            return master_key_allowed_prod_accounts.Contains(CurrentAccount.CurrentAddress.ToString());
-
-        if (page == PageTypes.LICENSE || page == PageTypes.STATS)
-                return license_allowed_prod_accounts.Contains(CurrentAccount.CurrentAddress.ToString());
-
-        return false;
+        return true;
     }
+    
 
     // return true if no page switch is required, or false if navigated to a different page
     public async Task<bool> PageSelector(PageTypes currentPage)
@@ -137,7 +127,7 @@ public class AccountService
                 else
                 if (currentPage == PageTypes.TESTING)
                 {
-                    return CanAccessAdminPage(currentPage);
+                    return true;
                 }
                 else
                 {
@@ -211,10 +201,7 @@ public class AccountService
                     }
                     break;
                 case PageTypes.TESTING:
-                case PageTypes.LICENSE:
-                case PageTypes.MASTER_KEY:
-                case PageTypes.STATS:
-                    return CanAccessAdminPage(currentPage);
+                    return CanAccessTestingPage();
             }
 
             return true;

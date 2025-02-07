@@ -79,7 +79,7 @@ public class MainLayoutNotification : NotificationService, INotificationService
 
 }
 
-public enum UIModes { Unknown, Chats, Secrets, Account, Settings, InstantShare, License, MasterKey, Stats };
+public enum UIModes { Unknown, Chats, Secrets, Account, Settings, InstantShare };
 
 public class UIModeNotification : NotificationService, INotificationService
 {
@@ -124,8 +124,8 @@ public class DrawerState
 
 public enum PageTypes {
     CHAT, CREATE_ACCOUNT, NEW_CHAT, MAIN_LAYOUT, DRAWER, MANAGE_ACCOUNT,
-    TESTING, SECRET, NEW_SECRET, LICENSE, NEW_FOLDER, FOLDER,
-    INSTANT_SHARE, MASTER_KEY, LOCKED, STATS
+    TESTING, SECRET, NEW_SECRET, NEW_FOLDER, FOLDER,
+    INSTANT_SHARE, LOCKED
 };
 
 public static class PageUrls
@@ -141,13 +141,10 @@ public static class PageUrls
     public const string LOCKED = "/locked";
     public const string CHECKOUT = "https://checkout.mystsafe.com";
     public const string TESTING = "/testing";
-    public const string MASTER_KEY = "/masterkey";
-    public const string LICENSE = "/license";
     public const string WEBSITE = "https://mystsafe.com";
     public const string FOLDER = "/folder";
     public const string NEW_FOLDER = "/newfolder";
     public const string INSTANT_SHARE = "/instantshare";
-    public const string STATS = "/stats";
 }
 
 

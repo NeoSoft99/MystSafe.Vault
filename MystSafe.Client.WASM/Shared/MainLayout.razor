@@ -35,45 +35,17 @@
         <MudSpacer />
 
         <SmartMudIconButton ButtonSize="Size.Medium" ButtonIcon="@Icons.Material.Filled.Security" ButtonColor="Color.Inherit" Edge="Edge.End" OnButtonClick="@((e) => Secret())" Disabled=!SECRETS_BUTTON_ENABLED TooltipText="Secrets" />
-
-
+        
         <SmartMudIconButton ButtonSize="Size.Medium" ButtonIcon="@Icons.Material.Filled.ChatBubble" ButtonColor="Color.Inherit" Edge="Edge.End" OnButtonClick="@((e) => Chat())" Disabled=!CHATS_BUTTON_ENABLED TooltipText="Chats" />
 
         <SmartMudIconButton ButtonSize="Size.Medium" ButtonIcon="@Icons.Material.Filled.AccountCircle" ButtonColor="Color.Inherit" Edge="Edge.End" OnButtonClick="@((e) => ManageAccount())" Disabled=!ACCOUNT_BUTTON_ENABLED TooltipText="Account" IsWorking=is_account_working />
 
         <SmartMudIconButton ButtonSize="Size.Medium" ButtonIcon="@Icons.Material.Filled.Info" ButtonColor="Color.Inherit" Edge="Edge.End" OnButtonClick="@((e) => Info())" TooltipText="About MystSafe" IsWorking=is_about_working />
 
-        @if (SETTINGS_BUTTON_ENABLED)
-        {
-            <MudTooltip ShowOnClick=false ShowOnHover="@(!browserInfo.IsMobile)" Text="Testing">
-                <MudIconButton Icon="@Icons.Material.Filled.Check" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => Testing())" />
-            </MudTooltip>
-        }
-
-        @*
-        @if (LICENSE_BUTTON_ENABLED)
-        {
-            <MudTooltip ShowOnClick=false ShowOnHover="@(!browserInfo.IsMobile)" Text="License">
-                <MudIconButton Icon="@Icons.Material.Filled.Money" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => License())" />
-            </MudTooltip>
-            <MudTooltip ShowOnClick=false ShowOnHover="@(!browserInfo.IsMobile)" Text="Stats">
-                <MudIconButton Icon="@Icons.Material.Filled.Numbers" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => Stats())" />
-            </MudTooltip>
-        }
-
-        @if (MASTER_KEYS_BUTTON_ENABLED)
-        {
-            <MudTooltip ShowOnClick=false ShowOnHover="@(!browserInfo.IsMobile)" Text="Master Key">
-                <MudIconButton Icon="@Icons.Material.Filled.Key" Color="Color.Inherit" Edge="Edge.End" OnClick="@((e) => MasterKey())" />
-            </MudTooltip>
-        }
-        *@
-
-
+        <SmartMudIconButton ButtonSize="Size.Medium" ButtonIcon="@Icons.Material.Filled.Check" ButtonColor="Color.Inherit" Edge="Edge.End" OnButtonClick="@((e) => Testing())" Disabled=!SETTINGS_BUTTON_ENABLED TooltipText="Testing" />
+        
     </MudAppBar>
-    <!--    <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
-            <NavMenu />
-        </MudDrawer> -->
+
     <MudDrawer Width="@(browserInfo.IsMobile ? "100%" : "25%")" @bind-Open="drawerState.IsOpen" ClipMode="DrawerClipMode.Always" Elevation="1" Variant="@DrawerVariant.Persistent">
         @if (uiModeNotification.UIMode == UIModes.Chats)
         {
@@ -228,21 +200,6 @@
         navigationManager.NavigateTo(PageUrls.TESTING);
     }
 
-    private void License()
-    {
-        navigationManager.NavigateTo(PageUrls.LICENSE);
-    }
-
-    private void Stats()
-    {
-        navigationManager.NavigateTo(PageUrls.STATS);
-    }
-
-    private void MasterKey()
-    {
-        navigationManager.NavigateTo(PageUrls.MASTER_KEY);
-    }
-
     bool is_about_working = false;
 
     private void Info()
@@ -292,15 +249,11 @@
     bool SECRETS_BUTTON_ENABLED = true;
     bool SETTINGS_BUTTON_ENABLED = false;
     bool TOGGLE_BUTTON_ENABLED = true;
-    bool LICENSE_BUTTON_ENABLED = false;
-    bool MASTER_KEYS_BUTTON_ENABLED = false;
-
+    
     string DrawerToggleButtonCaption = string.Empty;
 
     string CAPTION = string.Empty;
-
-
-
+    
     private void UIModeChanged(object sender, EventArgs e)
     {
         ACCOUNT_BUTTON_ENABLED = true;
@@ -308,9 +261,7 @@
         SECRETS_BUTTON_ENABLED = true;
         TOGGLE_BUTTON_ENABLED = false;
 
-        SETTINGS_BUTTON_ENABLED = accountService.CanAccessAdminPage(PageTypes.TESTING);
-        LICENSE_BUTTON_ENABLED = accountService.CanAccessAdminPage(PageTypes.LICENSE);
-        MASTER_KEYS_BUTTON_ENABLED = accountService.CanAccessAdminPage(PageTypes.MASTER_KEY);
+        SETTINGS_BUTTON_ENABLED = accountService.CanAccessTestingPage();
 
         DrawerToggleButtonCaption = "";
 
@@ -336,25 +287,12 @@
                 TOGGLE_BUTTON_ENABLED = true;
                 break;
             case UIModes.Settings:
+                SETTINGS_BUTTON_ENABLED = false;
                 CAPTION = "Testing";
                 drawerState.IsOpen = false;
                 break;
             case UIModes.InstantShare:
                 CAPTION = "Instant Share";
-                drawerState.IsOpen = false;
-                break;
-            case UIModes.License:
-                //LICENSE_BUTTON_ENABLED = false;
-                CAPTION = "License";
-                drawerState.IsOpen = false;
-                break;
-            case UIModes.MasterKey:
-                //LICENSE_BUTTON_ENABLED = false;
-                CAPTION = "Master Key";
-                drawerState.IsOpen = false;
-                break;
-            case UIModes.Stats:
-                CAPTION = "Stats";
                 drawerState.IsOpen = false;
                 break;
         }

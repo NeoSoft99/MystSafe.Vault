@@ -83,7 +83,7 @@ public class Wallet
         _userAddress = userAddress;
         //Height = lastTxTimeStamp;
         if (UserAddress.ConvertMystSafeNetworkToMonero(_network) != userAddress.Network)
-            throw new ArgumentException("Addess network mismatch");
+            throw new ArgumentException($"Addess network mismatch. _network: {_network} userAddress.Network: {userAddress.Network} accountId: {accountId}");
         _userAddress = userAddress;
         _accountId = accountId;
         _network = network;

@@ -147,9 +147,12 @@ namespace MystSafe.Shared.Crypto;
 
         public static MoneroNetwork ConvertMystSafeNetworkToMonero(int mystsafe_network)
         {
-            if (mystsafe_network == Networks.mainnet || mystsafe_network == Networks.custom)
+            // *** maybe to do in the future
+            /*if (mystsafe_network == Networks.mainnet || mystsafe_network == Networks.custom)
                 return MoneroNetwork.MAINNET;
-            return MoneroNetwork.TESTNET;
+            return MoneroNetwork.TESTNET;*/
+            // ***
+            return MoneroNetwork.MAINNET;
         }
     }
 
