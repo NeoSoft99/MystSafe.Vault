@@ -21,7 +21,7 @@
 using MystSafe.Shared.Common;
 using MystSafe.Shared.Crypto;
 using Microsoft.Extensions.Logging;
-using NBitcoin;
+//using NBitcoin;
 
 namespace MystSafe.Client.Engine;
 

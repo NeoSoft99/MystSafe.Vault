@@ -1435,6 +1435,11 @@ public class SendProcessor
 
     public async Task<bool> LookForSecrets(Account account)
     {
+        // *** debug - remove afterwards:
+        var HiddenScanKey = string.Empty;
+        var PubKey = string.Empty;
+        var block_salt = string.Empty;
+        // ***
         var result = false;
         List<SecretBlock> blocks = new List<SecretBlock>();
         try
@@ -1453,6 +1458,12 @@ public class SendProcessor
                     foreach (var block in scan_response.Blocks)
                     {
                         var decoder = new SecretBlockValidator(block);
+                        // *** debug - remove afterwards:
+                        HiddenScanKey = account.CurrentAddress.HiddenScanKey.ToString();
+                        PubKey = block.PubKey;
+                        block_salt = decoder.CalculateBlockSalt();
+                        // ***
+                        
                         var stealth_address = StealthAddress.Restore(
                             account.CurrentAddress.HiddenScanKey.ToString(),
                             block.PubKey,
@@ -1484,7 +1495,9 @@ public class SendProcessor
         }
         catch (Exception e)
         {
-            throw new Exception("Scan for secrets failed: ", e);
+            throw new Exception(
+                $"Scan for secrets failed: {e} HiddenScanKey: {HiddenScanKey} PubKey: {PubKey} block_salt: {block_salt}");
+            
         }
 
         return result;

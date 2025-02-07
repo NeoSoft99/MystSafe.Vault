@@ -75,9 +75,8 @@ namespace MystSafe.Shared.Crypto;
                 // Validate key lengths for Curve25519
                 if (privateKey.Length != 32)
                     throw new ArgumentException("Invalid length for local private key.");
-                if (privateKey.Length != 32)
+                if (publicKey.Length != 32)
                     throw new ArgumentException("Invalid length for remote public key.");
-
                 
                 // Convert rA to bytes
                 byte[] rABytes = new byte[32];

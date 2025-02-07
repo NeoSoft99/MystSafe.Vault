@@ -23,7 +23,7 @@ using MoneroRing.Crypto;
 using MoneroSharp;
 using System.Runtime.CompilerServices;
 using MoneroSharp.Utils;
-using NBitcoin;
+//using NBitcoin;
 
 [assembly: InternalsVisibleTo("MystSafe.Shared.Tests")]
 
@@ -69,7 +69,7 @@ namespace MystSafe.Shared.Crypto;
         }
         
      
-        private UserAddress(string mnemonic12String, Mnemonic mnemonic, MoneroNetwork network) : base(network)
+        private UserAddress(string mnemonic12String, NBitcoin.Mnemonic mnemonic, MoneroNetwork network) : base(network)
         {
             _mnemonic12 = mnemonic;
             _mnemonic12String = mnemonic12String;
@@ -82,7 +82,7 @@ namespace MystSafe.Shared.Crypto;
             UserAddress address = null;
             while (!check_result)
             {
-                var mnemonic = new Mnemonic(NBitcoin.Wordlist.English, NBitcoin.WordCount.Twelve);
+                var mnemonic = new NBitcoin.Mnemonic(NBitcoin.Wordlist.English, NBitcoin.WordCount.Twelve);
                 var mnemonic_string = mnemonic.ToString();
                 address = new UserAddress(mnemonic_string, mnemonic, ConvertMystSafeNetworkToMonero(network));
                 check_result = address.SetAddressFromMnemonic12();

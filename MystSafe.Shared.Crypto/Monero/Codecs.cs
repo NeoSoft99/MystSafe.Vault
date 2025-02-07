@@ -54,7 +54,7 @@ namespace MystSafe.Shared.Crypto;
 	        return System.Text.Encoding.ASCII.GetString(base58Bytes); //Encoders.Base58.EncodeData(data);
         }
 
-        public static byte[] FromBase58ToBytes(string data)
+        /*public static byte[] FromBase58ToBytes(string data)
         {
 	        if (string.IsNullOrWhiteSpace(data))
 		        throw new ArgumentException("Input string cannot be null, empty, or whitespace.", nameof(data));
@@ -76,6 +76,44 @@ namespace MystSafe.Shared.Crypto;
 	        
 	        byte[] base58Bytes = System.Text.Encoding.ASCII.GetBytes(data);
 	        return Base58.Decode(base58Bytes);  //Encoders.Base58.DecodeData(data);
+        }*/
+        
+        public static byte[] FromBase58ToBytes(string data)
+        {
+	        if (string.IsNullOrWhiteSpace(data))
+		        throw new ArgumentException("Input string cannot be null, empty, or whitespace.", nameof(data));
+
+	        const string validBase58Chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+
+	        foreach (char c in data)
+	        {
+		        if (!validBase58Chars.Contains(c))
+		        {
+			        throw new ArgumentException(
+				        $"Invalid character '{c}' in the input string. Base58 only.",
+				        nameof(data));
+		        }
+	        }
+
+	        data = data.Trim();
+
+	        byte[] base58Bytes = System.Text.Encoding.ASCII.GetBytes(data);
+
+	        try
+	        {
+		        return Base58.Decode(base58Bytes);
+	        }
+	        catch (Exception ex)
+	        {
+		        // Capture extra debugging details
+		        var remainder = base58Bytes.Length % 11;
+		        throw new Exception(
+			        $"Failed to decode Base58 string '{data}' " +
+			        $"(length: {base58Bytes.Length}, remainder mod 11: {remainder}). " +
+			        $"Inner error: {ex.Message}",
+			        ex
+		        );
+	        }
         }
         
         public static string FromBytesToHex(byte[] data)

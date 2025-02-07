@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
-    <ReleaseVersion>0.3.3</ReleaseVersion>
+    <ReleaseVersion>0.3.4</ReleaseVersion>
     <LangVersion>13</LangVersion>
     <DebuggerSupport Condition="'$(Configuration)' == 'DebugCustom'">true</DebuggerSupport>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
