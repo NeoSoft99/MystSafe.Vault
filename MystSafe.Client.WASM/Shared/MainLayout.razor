@@ -41,9 +41,11 @@
         <SmartMudIconButton ButtonSize="Size.Medium" ButtonIcon="@Icons.Material.Filled.AccountCircle" ButtonColor="Color.Inherit" Edge="Edge.End" OnButtonClick="@((e) => ManageAccount())" Disabled=!ACCOUNT_BUTTON_ENABLED TooltipText="Account" IsWorking=is_account_working />
 
         <SmartMudIconButton ButtonSize="Size.Medium" ButtonIcon="@Icons.Material.Filled.Info" ButtonColor="Color.Inherit" Edge="Edge.End" OnButtonClick="@((e) => Info())" TooltipText="About MystSafe" IsWorking=is_about_working />
-
-        <SmartMudIconButton ButtonSize="Size.Medium" ButtonIcon="@Icons.Material.Filled.Check" ButtonColor="Color.Inherit" Edge="Edge.End" OnButtonClick="@((e) => Testing())" Disabled=!SETTINGS_BUTTON_ENABLED TooltipText="Testing" />
         
+        @if (TESTING_BUTTON_VISIBLE)
+        {
+            <SmartMudIconButton ButtonSize="Size.Medium" ButtonIcon="@Icons.Material.Filled.Check" ButtonColor="Color.Inherit" Edge="Edge.End" OnButtonClick="@((e) => Testing())" TooltipText="Testing"/>
+        }
     </MudAppBar>
 
     <MudDrawer Width="@(browserInfo.IsMobile ? "100%" : "25%")" @bind-Open="drawerState.IsOpen" ClipMode="DrawerClipMode.Always" Elevation="1" Variant="@DrawerVariant.Persistent">
@@ -247,7 +249,7 @@
     bool ACCOUNT_BUTTON_ENABLED = true;
     bool CHATS_BUTTON_ENABLED = true;
     bool SECRETS_BUTTON_ENABLED = true;
-    bool SETTINGS_BUTTON_ENABLED = false;
+    bool TESTING_BUTTON_VISIBLE = false;
     bool TOGGLE_BUTTON_ENABLED = true;
     
     string DrawerToggleButtonCaption = string.Empty;
@@ -261,7 +263,7 @@
         SECRETS_BUTTON_ENABLED = true;
         TOGGLE_BUTTON_ENABLED = false;
 
-        SETTINGS_BUTTON_ENABLED = accountService.CanAccessTestingPage();
+        TESTING_BUTTON_VISIBLE = accountService.CanAccessTestingPage();
 
         DrawerToggleButtonCaption = "";
 
@@ -287,7 +289,6 @@
                 TOGGLE_BUTTON_ENABLED = true;
                 break;
             case UIModes.Settings:
-                SETTINGS_BUTTON_ENABLED = false;
                 CAPTION = "Testing";
                 drawerState.IsOpen = false;
                 break;

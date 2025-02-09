@@ -29,6 +29,8 @@ namespace MystSafe.Client.App;
 public class AccountService
 {
     public Account? CurrentAccount { get; set; }
+    
+
 
     private readonly NavigationManager _NavigationManager;
     private readonly SendProcessor _SendProcessor;
@@ -106,6 +108,7 @@ public class AccountService
         load_in_progress = true;
         try
         {
+            _inactivityTimerService.RecentPageURL = PageUrls.TypeToURL(currentPage);
             if (!HasActiveAccount)
             {
                 // try to load acount from database - in case the current page is refreshed

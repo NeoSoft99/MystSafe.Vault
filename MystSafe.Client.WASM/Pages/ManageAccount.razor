@@ -49,7 +49,7 @@
                 <SecretTextField @bind-TextValue="Rewards" TextLabel="Rewards" ReadOnly="true"> </SecretTextField>
 
                 <MudToolBar Class="ma-3">
-                    <MudSwitch T="int" @bind-Checked="@Authn_checked" Color="Color.Success">Biometric/Passkey</MudSwitch>
+                    <MudSwitch @bind-Value="@Authn_checked" Color="Color.Success">Biometric/Passkey</MudSwitch>
                     <MudSlider Class="ma-3 slider-flex-grow" Min="0" Max="7" Step="1" @bind-Value="@LockTimeoutSliderValue">
                         Lock timeout: @GetDisplayLockTimeout()
                     </MudSlider>

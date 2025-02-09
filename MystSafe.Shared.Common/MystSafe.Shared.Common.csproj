@@ -7,7 +7,7 @@
     <LangVersion>13</LangVersion>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>MystSafe Developers</Authors>
-    <Copyright>Copyright (C) 2024 MystSafe</Copyright>
+    <Copyright>Copyright (C) 2025 MystSafe</Copyright>
     <PackageProjectUrl>https://github.com/MystSafe</PackageProjectUrl>
     <Version>1.3.8</Version>
   </PropertyGroup>

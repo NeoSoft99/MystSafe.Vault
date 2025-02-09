@@ -145,6 +145,29 @@ public static class PageUrls
     public const string FOLDER = "/folder";
     public const string NEW_FOLDER = "/newfolder";
     public const string INSTANT_SHARE = "/instantshare";
+
+    public static string TypeToURL(PageTypes pageType)
+    {
+        switch (pageType)
+        {
+            case PageTypes.CHAT: 
+                return PageUrls.CHAT;
+            case PageTypes.CREATE_ACCOUNT: 
+                return PageUrls.CREATE_ACCOUNT;
+            case PageTypes.NEW_CHAT: return PageUrls.NEW_CHAT;
+            case PageTypes.MAIN_LAYOUT: return PageUrls.DEFAULT_PAGE;
+            case PageTypes.DRAWER: return PageUrls.DEFAULT_PAGE;
+            case PageTypes.MANAGE_ACCOUNT: return PageUrls.MANAGE_ACCOUNT;
+            case PageTypes.TESTING: return PageUrls.TESTING;
+            case PageTypes.SECRET: return PageUrls.SECRET;  
+            case PageTypes.NEW_SECRET: return PageUrls.NEW_SECRET;
+            case PageTypes.NEW_FOLDER: return PageUrls.NEW_FOLDER;
+            case PageTypes.FOLDER: return PageUrls.FOLDER;
+            case PageTypes.INSTANT_SHARE: return PageUrls.INSTANT_SHARE;
+            case PageTypes.LOCKED: return PageUrls.LOCKED;
+            default: return PageUrls.DEFAULT_PAGE;
+        }
+    }
 }
 
 

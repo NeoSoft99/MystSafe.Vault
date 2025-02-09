@@ -150,7 +150,7 @@ public class WebAuthnServer
                 Id = user_id //Encoding.UTF8.GetBytes(username) // byte representation of userID is required
             };
 
-            Console.WriteLine("GetCredentialOptions() user id: " + Convert.ToBase64String(user.Id));
+            //Console.WriteLine("GetCredentialOptions() user id: " + Convert.ToBase64String(user.Id));
 
             // 2. Get user existing keys by username
             var existingKeys = new List<PublicKeyCredentialDescriptor>(); 
@@ -382,7 +382,7 @@ public class WebAuthnServer
             var user_handle = Convert.ToBase64String(clientResponse.Response.UserHandle);
             //var original_user_handle = Convert.ToBase64String(_stored_credential.UserHandle);
 
-            Console.WriteLine("MakeAssertionAsync() user_handle: " + user_handle);
+            //Console.WriteLine("MakeAssertionAsync() user_handle: " + user_handle);
             //Console.WriteLine("MakeAssertionAsync() original_user_handle: " + original_user_handle);
 
             //if (user_handle != original_user_handle)

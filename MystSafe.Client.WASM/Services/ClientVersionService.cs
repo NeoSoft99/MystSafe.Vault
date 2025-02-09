@@ -29,7 +29,7 @@ public class ClientVersionService
         var assembly = Assembly.GetExecutingAssembly();
         var releaseVersionAttribute = assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
                                               .FirstOrDefault(a => a.Key == "ReleaseVersion");
-        return releaseVersionAttribute?.Value ?? "Version not found";
+        return (releaseVersionAttribute?.Value ?? "0.1.1") + " Beta";
     }
 }
 

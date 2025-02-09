@@ -69,13 +69,13 @@ public class WebAuthnUser
 
         try
         {
-            Console.WriteLine("CreateCredsAsync() options:");
-            Console.WriteLine("CreateCredsAsync() options : " + options is not null ? options.ToJson() : "null");
+            //Console.WriteLine("CreateCredsAsync() options:");
+            //Console.WriteLine("CreateCredsAsync() options : " + options is not null ? options.ToJson() : "null");
 
             // Present options to user and get response
             var attestationResponse = await _webAuthn.CreateCredsAsync(options);
 
-            Console.WriteLine("attestationResponse:" + attestationResponse.ToString());
+            //Console.WriteLine("attestationResponse:" + attestationResponse.ToString());
 
             // Send response to server
             var (resultcode, credential_result) = await _serverService.CreateCredentialAsync(options, attestationResponse);

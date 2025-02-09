@@ -110,9 +110,9 @@ public class AccessControlService
                 //await _inactivityTimerService.ResetTimer();
             }
 
-            Console.WriteLine("EnablePasskey result: " + register_result.ResultCode);
-            Console.WriteLine("EnablePasskey message: " + register_result.ResultMessage);
-            Console.WriteLine("EnablePasskey PasskeyCredentials: " + register_result.PasskeyCredentials);
+            //Console.WriteLine("EnablePasskey result: " + register_result.ResultCode);
+            //Console.WriteLine("EnablePasskey message: " + register_result.ResultMessage);
+            //Console.WriteLine("EnablePasskey PasskeyCredentials: " + register_result.PasskeyCredentials);
             return register_result;
         }
         catch (Exception ex)

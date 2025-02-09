@@ -61,9 +61,14 @@
                 return;
 
             //if (await accessControlService.IsLoggedIn(accountService.CurrentAccount))
-            
+
             if (!accountService.HasActiveAccount)
-            
+            {
+                accessControlService.IsAppLocked = false;
+                navigationManager.NavigateTo(PageUrls.CREATE_ACCOUNT);
+                return;
+            }
+
             if (await accessControlService.IsLoggedIn(accountService.CurrentAccount.Id, 
                     accountService.CurrentAccount.LocalAuthnType,
                     accountService.CurrentAccount.LocalEncryptionKey,
@@ -71,12 +76,12 @@
             {
                 var locked_page = inactivityTimerService.LockedPage;
                 drawerState.IsOpen = inactivityTimerService.DrawerisOpen;
+                accessControlService.IsAppLocked = false;
                 await mainLayoutNotification.NotifyChanged();
                 if (!string.IsNullOrWhiteSpace(locked_page))
                     navigationManager.NavigateTo(locked_page);
                 else
-                    navigationManager.NavigateTo("/secret");
-                accessControlService.IsAppLocked = false;
+                    navigationManager.NavigateTo(PageUrls.SECRET);
 
             }
             else

@@ -4,7 +4,7 @@
     bottom: 2rem;
     padding: 1rem 1.5rem;
     animation: fadein 2s ease-out;
-    /*z-index: 9999 !important;*/
+    z-index: 99999;
 }
 
 @keyframes fadein {

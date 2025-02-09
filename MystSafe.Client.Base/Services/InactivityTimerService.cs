@@ -25,6 +25,7 @@ namespace MystSafe.Client.Base;
 
 public class InactivityTimerService
 {
+    public string RecentPageURL { get; set; } = string.Empty;
     private readonly IJSRuntime _jsRuntime;
     private readonly DotNetObjectReference<InactivityTimerService> _objectReference;
     //private AccessControlService _accessControlService;
@@ -49,7 +50,7 @@ public class InactivityTimerService
     [JSInvokable]
     public async Task OnTimer()
     {
-        LockedPage = GetPageName();
+        LockedPage = RecentPageURL; //GetPageName();
         await Task.Yield();
         OnInactivityTimer?.Invoke(this, new EventArgs());
     }
@@ -78,7 +79,7 @@ public class InactivityTimerService
         await ResetTimer();
     }
 
-    private string GetPageName()
+    /*private string GetPageName()
     {
         var uri = new Uri(_navigationManager.Uri);
 
@@ -91,7 +92,7 @@ public class InactivityTimerService
         }
 
         return "/secret";
-    }
+    }*/
 }
 
 
