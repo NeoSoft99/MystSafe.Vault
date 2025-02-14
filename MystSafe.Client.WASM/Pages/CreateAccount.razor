@@ -23,9 +23,9 @@
     <MudCard Elevation="0" Class="ma-2">
         <MudCardHeader>
             <CardHeaderContent>
-                <MudRadioGroup @bind-SelectedOption="Account_Option" T="int" >
-                    <MudRadio T="int" Option="1" Color="Color.Success" UnCheckedColor="Color.Default" Size="Size.Large">Create New Account</MudRadio>
-                    <MudRadio T="int" Option="2" Color="Color.Success" UnCheckedColor="Color.Default" Size="Size.Large">Restore From Secret Phrase</MudRadio>
+                <MudRadioGroup @bind-Value="Account_Option" T="int" >
+                    <MudRadio T="int" Value="1" Color="Color.Success" UnCheckedColor="Color.Default" Size="Size.Large">Create New Account</MudRadio>
+                    <MudRadio T="int" Value="2" Color="Color.Success" UnCheckedColor="Color.Default" Size="Size.Large">Restore From Secret Phrase</MudRadio>
                 </MudRadioGroup>
 
                 @*<MudText Typo="Typo.h5">Create New Account</MudText>*@
