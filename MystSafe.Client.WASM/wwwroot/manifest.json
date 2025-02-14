@@ -1,6 +1,6 @@
 {
   "short_name": "MystSafe",
-  "name": "MystSafe Password Manager",
+  "name": "MystSafe Secret Vault",
   "start_url": "./",
   "background_color": "#ffffff",
   "display": "standalone",
