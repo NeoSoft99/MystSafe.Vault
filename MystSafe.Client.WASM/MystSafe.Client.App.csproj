@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
-    <ReleaseVersion>0.4.7</ReleaseVersion>
+    <ReleaseVersion>0.4.9</ReleaseVersion>
     <LangVersion>13</LangVersion>
     <DebuggerSupport Condition="'$(Configuration)' == 'DebugCustom'">true</DebuggerSupport>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
@@ -38,6 +38,7 @@
     <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="9.0.1" />
     <PackageReference Include="Microsoft.NET.Sdk.WebAssembly.Pack" Version="9.0.1" />
     <PackageReference Include="MudBlazor" Version="8.2.0" />
+    <PackageReference Include="QRCoder" Version="1.6.0" />
     <PackageReference Include="Universal.Microsoft.AspNetCore.Components.Web" Version="4.0.0" />
     <PackageReference Include="BlazorDownloadFile" Version="2.4.0.2" />
   </ItemGroup>
@@ -67,7 +68,6 @@
   <ItemGroup>
     <Folder Include="Services\" />
     <Folder Include="Components\" />
-    <Folder Include="wwwroot\js\" />
   </ItemGroup>
   <ItemGroup>
     <None Update="Components\UpdateAvailableDetector.razor.css">

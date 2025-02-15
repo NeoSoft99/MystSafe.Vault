@@ -86,6 +86,14 @@ public class SendProcessor
 
     #region Accounts
     
+    public string GetTransferData(Account account)
+    {
+        // Ensure the account name is no more than 20 characters.
+        var name = account.NickName.Length > ClientConstants.MAX_ACCOUNT_NICKNAME_LENGTH_BYTES ? account.NickName.Substring(0, ClientConstants.MAX_ACCOUNT_NICKNAME_LENGTH_BYTES) : account.NickName;
+        // Format the data as: securityPhrase|accountName
+        return $"{account.Mnemonic}|{name}";
+    }
+    
     public async Task<Account> CreateNewAccount(string nickname, int network)
     {
         ValidateNickname(nickname);

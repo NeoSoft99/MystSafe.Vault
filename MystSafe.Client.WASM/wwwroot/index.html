@@ -35,6 +35,8 @@
 
     <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
+
+
 </head>
 
 <body>
@@ -63,6 +65,13 @@
     <script src="js/copytoclipboard.js"></script>
     <script src="js/print.js"></script>
     <script src="js/textsize.js"></script>
+
+    <!-- 1) Load jsQR (CDN version or local if you prefer) -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
+    <!-- 2) Load your custom JS interop after jsQR -->
+    <script src="js/jsQRInterop.js"></script>
+
 </body>
 
 </html>

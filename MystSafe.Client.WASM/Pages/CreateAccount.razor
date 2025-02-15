@@ -18,7 +18,9 @@
 @inject ClientVersionService versionService
 @inject IDialogService DialogService
 
-@*<MudPaper Elevation="0" Style="@paperStyle">*@
+<MudOverlay Visible="@isRestoring" DarkBackground="true" Absolute="true">
+        <MudProgressCircular Color="Color.Success" Indeterminate="true" Size="Size.Large" />
+</MudOverlay>
 <MudPaper Elevation="0">
     <MudCard Elevation="0" Class="ma-2">
         <MudCardHeader>
@@ -26,95 +28,57 @@
                 <MudRadioGroup @bind-Value="Account_Option" T="int" >
                     <MudRadio T="int" Value="1" Color="Color.Success" UnCheckedColor="Color.Default" Size="Size.Large">Create New Account</MudRadio>
                     <MudRadio T="int" Value="2" Color="Color.Success" UnCheckedColor="Color.Default" Size="Size.Large">Restore From Secret Phrase</MudRadio>
+                    <MudRadio T="int" Value="3" Color="Color.Success" UnCheckedColor="Color.Default" Size="Size.Large">Link Another Device</MudRadio>
                 </MudRadioGroup>
-
-                @*<MudText Typo="Typo.h5">Create New Account</MudText>*@
             </CardHeaderContent>
             <CardHeaderActions>
             </CardHeaderActions>
         </MudCardHeader>
         <MudCardContent>
             <MudPaper Elevation="0" Style="display: flex; flex-direction: column;">
-
-                <MudToolBar Class="ma-4">
-                    <MudTextField MaxLength="ClientConstants.MAX_ACCOUNT_NICKNAME_LENGTH_BYTES" @bind-Value="Nickname" T="string" Label="Nickname" Variant="Variant.Outlined" HelperText="Shared with your contacts, but never publicly" Clearable="true" Immediate="true" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Refresh" OnAdornmentClick="GenerateRandomUsername" AdornmentAriaLabel="Generate random username" />
-                </MudToolBar>
-                @*   <MudToolBar Class="ma-3">
-
-                        <div><small>
-                    @if (Account_Option == 2)
-                    {
-                        <p>
-                    The account nickname can be different from the one used for the original account,
-                    but if you want to avoid confusion you better use the same nickname on all devies.
-                        </p>
-                    }
-                    <p>
-                        Note that the account nickname you enter here will be shared with your contacts, but it will never be visible publicly.
-                        You can use either your real name or an abstract nickname, depending on level of privacy you are seeking.
-                    </p>
-                    </small></div>
-
-                        </MudToolBar>
-
-                            <MudToolBar Class="ma-4">
-                                <MudSelect @bind-Value="@NetworkSelected" T="string" Label="Select Network" Variant="Variant.Outlined" HelperText="">
-                                    <MudSelectItem Value="@(Networks.ToString(Networks.mainnet))" />
-                                    <MudSelectItem Value="@(Networks.ToString(Networks.testnet))" />
-                                    <MudSelectItem Value="@(Networks.ToString(Networks.devnet))" />
-                                    <MudSelectItem Value="@(Networks.ToString(Networks.custom))" />
-                                </MudSelect>
-                            </MudToolBar>
-                *@
-
-                @*<MudToolBar Class="ma-4">
-                        <MudTextField @bind-Value="NetworkSelected" T="string" Label="Network" Variant="Variant.Outlined" ReadOnly="true" />
-                    </MudToolBar>*@
-
+                @if (Account_Option == 1 || Account_Option == 2)
+                {
+                    <MudToolBar Class="ma-4">
+                        <MudTextField MaxLength="ClientConstants.MAX_ACCOUNT_NICKNAME_LENGTH_BYTES" @bind-Value="Nickname" T="string" Label="Nickname" Variant="Variant.Outlined" HelperText="Shared with your contacts, but never publicly" Clearable="true" Immediate="true" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Refresh" OnAdornmentClick="GenerateRandomUsername" AdornmentAriaLabel="Generate random username"/>
+                    </MudToolBar>
+                }
                 @if (Account_Option == 2)
                 {
                     <MudToolBar Class="ma-4">
                         <MudTextField @bind-Value="Mnemonic" T="string" Label="Secret Phrase" Variant="Variant.Outlined" HelperText="12 words" />
                     </MudToolBar>
                 }
+                @if (Account_Option == 3)
+                { 
+                    <MudText Typo="Typo.h6">
+                        <MudIcon Icon="@Icons.Material.Filled.Camera" Class="mr-3" />Scan QR code
+                    </MudText>
+                    <p>Open MystSafe app on another device, go to 'Account', and press 'Link Device' button.</p>
+                    <div class="scanner-container">
+                        <video id="qrVideo"
+                               autoplay
+                               playsinline
+                               style="width: 100%; height: auto; object-fit: contain;">
+                        </video>
+                        <canvas id="qrCanvas" style="display:none;"></canvas>
+                    </div>
+                }
             </MudPaper>
         </MudCardContent>
-        <MudCardActions>
-            @*<MudButton Class="ma-4" Disabled="@isWorking" @onclick="(() => CreateOrRestore())" Variant="Variant.Filled" Color="Color.Primary">
-                        @if (isWorking && Account_Option == 1)
-                        {
-                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Success" />
-                            <MudText>Creating...</MudText>
-                        }
-                        else
-                if (isWorking && Account_Option == 2)
-                        {
-                            <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
-                            <MudText Class="ms-2">Restoring...</MudText>
-                        }
-                        else
-                   if (Account_Option == 1)
-                        {
-                            <MudText>Create Account</MudText>
-                        }
-                        else
-                   if (Account_Option == 2)
-                        {
-                            <MudText>Restore Account</MudText>
-                        }
-                    </MudButton>*@
+        <MudCardActions Class="ma-2">
+          
             @if (Account_Option == 1)
             {
                 <SmartMudButton NormalText="Create Account" WorkingText="Creating..." OnButtonClick="CreateOrRestore" IsWorking="isWorking"></SmartMudButton>
             }
-            else
+            @if (Account_Option == 2)
             {
                 <SmartMudButton NormalText="Restore Account" WorkingText="Restoring..." OnButtonClick="CreateOrRestore" IsWorking="isWorking"></SmartMudButton>
             }
         </MudCardActions>
     </MudCard>
 
-    <MudToolBar Position="Fixed" Bottom="0">
+    <MudToolBar Class="ma-2" Position="Fixed" Bottom="0">
         <MudText Typo="Typo.caption">Release Version: @versionService.GetReleaseVersion()</MudText>
     </MudToolBar>
 
@@ -127,8 +91,8 @@
         <DialogContent>
 
             <p>
-                If you want to be able to recover this account in the future,
-                make sure you back up the 12-word secret phrase before you delete the account.
+                To recover this account in the future, make sure you back up the 12-word secret phrase. 
+                Use 'Print' button for paper backup or 'Link Device' button for a backup by another device.  
             </p>
 
         </DialogContent>
@@ -151,13 +115,8 @@
             IF YOU DO NOT AGREE TO THE TERMS OF THIS AGREEMENT, DO NOT USE THE SOFTWARE.
             <p />
             <b>License:</b>
-            <br>Free Edition: Both individual and organizational end users are granted a non-exclusive, non-transferable, limited right to use the Free Edition of the Software for evaluation purposes with limitations as specified by MystSafe.
+            <br>Free Edition: Both individual and organizational end users are granted a non-exclusive, non-transferable, limited right to use the Free Edition of the Software with limitations as specified by MystSafe.
             <br>Premium Edition: Upon payment of the applicable fee, end users are granted a non-exclusive, non-transferable right to use the Premium Edition of the Software for its intended purpose without limitations of Free Edition.
-            <p />
-            <b>Restrictions:</b> The following activities are strictly prohibited:<br />
-            a. Modifying the Software.<br />
-            b. Distributing the Software or any modifications to the Software.<br />
-            c. Using the Software for commercial purposes without explicit permission from MystSafe, unless a Premium Edition license has been purchased.<br />
             <p />
             <b>Premium Services:</b> MystSafe reserves the exclusive right to offer additional services, features, and support related to the Software, which are only available to Premium Edition users or upon payment of a separate fee.
             <p />
@@ -199,7 +158,112 @@
 
     bool show_EULA = false;
 
-    public int Account_Option { get; set; } = 1; // 1 - create; 2 - restore
+    private bool _pendingStartScan;
+    private bool _isScanning; // optional if you want to keep track
+    private bool isRestoring;
+
+    private int _accountOption;
+    public int Account_Option
+    {
+        get => _accountOption;
+        set
+        {
+            if (_accountOption == value) return;
+
+            _accountOption = value;
+
+            // If user picks Transfer from Another Device:
+            if (_accountOption == 3)
+            {
+                // We'll start scanning AFTER render completes
+                _pendingStartScan = true;
+            }
+            else
+            {
+                // Stop scanning if switching away from option 3
+                _ = StopScanning();
+                _pendingStartScan = false;
+            }
+            StateHasChanged(); 
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // If we've flagged that we should start scanning
+        if (_pendingStartScan)
+        {
+            _pendingStartScan = false;
+            await StartScanning();
+            _isScanning = true;
+        }
+    }
+    
+    // Called from JS when a QR code is detected
+    [JSInvokable]
+    public async Task OnJsQrCodeDecoded(string decodedText)
+    {
+        try
+        {
+
+
+            // Format: "securityPhrase|accountName"
+            if (!string.IsNullOrWhiteSpace(decodedText))
+            {
+                var parts = decodedText.Split('|');
+                if (parts.Length == 2)
+                {
+                    isRestoring = true;
+                    StateHasChanged();  
+                    
+                    var secPhrase = parts[0];
+                    var acctName = parts[1];
+                    await RestoreAccount(acctName, secPhrase);
+                    navigationManager.NavigateTo(PageUrls.MANAGE_ACCOUNT);
+                }
+                else
+                {
+                    throw new Exception("Invalid QR code formatting");
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            ShowAlert("Failed to restore account: " + e.Message, Severity.Warning);
+            isRestoring = false;
+        }
+        finally
+        {
+
+        }
+    }
+    
+    // Start/Stop scanning with jsQR via JS interop
+    private async Task StartScanning()
+    {
+        await JSRuntime.InvokeVoidAsync("jsQrInterop.startJsQrScanner",
+            DotNetObjectReference.Create(this), 
+            "qrVideo", 
+            "qrCanvas");
+    }
+
+    private async Task StopScanning()
+    {
+        if (!_isScanning)
+            return;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("jsQrInterop.stopJsQrScanner");
+        }
+        catch (Exception e)
+        {
+            //Console.WriteLine(e);
+        }
+        finally
+        {
+            _isScanning = false;
+        }
+    }
 
     private void GenerateRandomUsername()
     {
@@ -276,15 +340,20 @@
         }
 
     }
-
+    
     private async Task Restore()
+    {
+        var account_name = Nickname.Trim();
+        var mnemonic_trimmed = Mnemonic.Trim();
+        await RestoreAccount(account_name, mnemonic_trimmed);
+    }
+
+    private async Task RestoreAccount(string account_name, string mnemonic_trimmed)
     {
         isWorking = true;
         StateHasChanged();
         try
         {
-            var account_name = Nickname.Trim();
-            var mnemonic_trimmed = Mnemonic.Trim();
             var account = await sendProcessor.RestoreAccount(mnemonic_trimmed, account_name, Networks.FromString(NetworkSelected));
             if (account == null)
                 throw new Exception("Unknown error");
@@ -292,7 +361,7 @@
 
             accountService.CurrentAccount = account;
 
-            navigationManager.NavigateTo("/manageaccount");
+            navigationManager.NavigateTo(PageUrls.MANAGE_ACCOUNT);
         }
         catch (ApplicationException e)
         {
@@ -348,11 +417,14 @@
         {
             NetworkSelected = Networks.ToString(Networks.devnet);
         }
+
+        Account_Option = 1;
         //SAlert(await runtimeFingerprint.GetRuntimeFingerprintAsync(), Severity.Success);
     }
-
+    
     void IDisposable.Dispose()
     {
         //CloseAlert();
     }
+
 }

@@ -65,6 +65,8 @@
                 <MudToolBar Class="ma-3">
                     @if (!edit_buttons_visible)
                     {
+                        <SmartMudButton NormalText="Link Device" OnButtonClick="OpenAddDeviceDialog" ></SmartMudButton>
+
                         <SmartMudButton NormalText="Get Premium" WorkingText="Wait..." OnButtonClick="BuyLicense" IsWorking="is_buy_license_working"></SmartMudButton>
 
                         <SmartMudButton NormalText="Check License" WorkingText="Checking..." OnButtonClick="SyncLicenseWallet" IsWorking="is_scan_license_working"></SmartMudButton>
@@ -77,7 +79,7 @@
                         <MudFileUpload T="IBrowserFile" FilesChanged="ViewSecretExportFile">
                             <ActivatorContent>
                                 @*<MudButton Style="margin-top: -6px;" HtmlTag="label" Icon="@Icons.Material.Filled.FileOpen" Size="Size.Medium" Color="Color.Primary" for="@context.Id">*@
-                                <MudButton Style="margin-top: -6px;" HtmlTag="label" Icon="@Icons.Material.Filled.FileOpen" Size="Size.Medium" Color="Color.Primary">
+                                <MudButton Style="margin-top: -6px;" HtmlTag="label" StartIcon="@Icons.Material.Filled.FileOpen" Size="Size.Medium" Color="Color.Primary">
                                     Decrypt Export
                                 </MudButton>
                             </ActivatorContent>
@@ -102,10 +104,27 @@
         </MudCardActions>
     </MudCard>
 
-    <MudToolBar Position="Fixed" Bottom="0">
-        <MudText Typo="Typo.caption">Release Version: @versionService.GetReleaseVersion()</MudText>
+    <MudToolBar Class="ma-3" Position="Fixed" Bottom="0">
+        <MudText Typo="Typo.caption">Version: @versionService.GetReleaseVersion()</MudText>
     </MudToolBar>
-    <MudDialogPortal>
+    
+    <MudDialog @bind-Visible="@showAddDeviceDialog" Options="dialogOptions">
+        <TitleContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.Add" Class="mr-3" Color="Color.Info" />Link Device
+            </MudText>
+        </TitleContent>
+        <DialogContent>
+            <p>
+                @((MarkupString)qrCodeSvg)
+            </p>
+            <p>Open MystSafe app on another device, select 'Link Another Device' option, and scan this QR code.</p>
+        </DialogContent>
+        <DialogActions>
+            <MudButton OnClick="CloseAddDeviceDialog" Variant="Variant.Filled" Color="Color.Inherit">Close</MudButton>
+        </DialogActions>
+    </MudDialog>
+
     <MudDialog @bind-Visible="@_erase_dialog_visible" Options="dialogOptions">
         <TitleContent>
             <MudText Typo="Typo.h6">
@@ -124,7 +143,7 @@
             <MudButton OnClick="CancelErase" Variant="Variant.Filled" Color="Color.Inherit">Cancel</MudButton>
         </DialogActions>
     </MudDialog>
-        </MudDialogPortal>
+
     <MudDialog @bind-Visible="@delete_dialog_visible" Options="dialogOptions">
         <TitleContent>
             <MudText Typo="Typo.h6">
@@ -154,6 +173,27 @@
 
 
 @code {
+    
+    #region Add Device
+    
+    private bool showAddDeviceDialog = false;
+    private string qrCodeSvg;
+
+    private void OpenAddDeviceDialog()
+    {
+        // Get the data string (format: "securityPhrase|accountName")
+        string transferData = sendProcessor.GetTransferData(accountService.CurrentAccount);
+        // Generate the QR code as an SVG string
+        qrCodeSvg = QRCodeHelper.GenerateSvgQRCode(transferData);
+        showAddDeviceDialog = true;
+    }
+
+    private void CloseAddDeviceDialog()
+    {
+        showAddDeviceDialog = false;
+    }
+    
+    #endregion
 
     #region Erase
 
