@@ -10,13 +10,13 @@
     <Title>MystSafe.Client.Engine</Title>
     <Authors>MystSafe developers</Authors>
     <Copyright>MystSafe</Copyright>
-    <Version>1.1.0</Version>
+    <Version>1.4.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="DotNetEnv" Version="3.1.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.2" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="DB\" />

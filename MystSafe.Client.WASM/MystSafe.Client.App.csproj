@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
-    <ReleaseVersion>0.4.9</ReleaseVersion>
+    <ReleaseVersion>0.4.10</ReleaseVersion>
     <LangVersion>13</LangVersion>
     <DebuggerSupport Condition="'$(Configuration)' == 'DebugCustom'">true</DebuggerSupport>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
@@ -31,12 +31,12 @@
     <ExternalConsole>true</ExternalConsole>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.1" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.2" PrivateAssets="all" />
     <PackageReference Include="IndexedDB.Blazor" Version="1.1.1" />
     <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
-    <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="9.0.1" />
-    <PackageReference Include="Microsoft.NET.Sdk.WebAssembly.Pack" Version="9.0.1" />
+    <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="9.0.2" />
+    <PackageReference Include="Microsoft.NET.Sdk.WebAssembly.Pack" Version="9.0.2" />
     <PackageReference Include="MudBlazor" Version="8.2.0" />
     <PackageReference Include="QRCoder" Version="1.6.0" />
     <PackageReference Include="Universal.Microsoft.AspNetCore.Components.Web" Version="4.0.0" />

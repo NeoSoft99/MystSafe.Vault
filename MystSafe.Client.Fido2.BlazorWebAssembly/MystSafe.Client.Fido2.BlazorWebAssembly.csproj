@@ -10,7 +10,7 @@
     <LangVersion>13</LangVersion>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <RootNamespace>Fido2.BlazorWebAssembly</RootNamespace>
-    <Version>1.1.0</Version>
+    <Version>1.4.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
